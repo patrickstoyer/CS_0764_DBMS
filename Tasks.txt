@@ -2,6 +2,9 @@ Rough Timeline   | Tasks
 ----------------|----------------------------------------
 February 12, 2024 | Pair Finalisation, Complete Code walk through
 February 26, 2024 | Define class for data records
+- Records have X (parameter) byte size and a Y (parameter) byte key field 
+- Keys random order
+- Sort key w/ pointer to record, not record per se
 March 11, 2024    | Add predicate evaluation to FilterIterator
 March 25, 2024    | Add in-memory sorting, duplicate removal
 April 8, 2024     | Add Plan & Iterator that verify a set of rows, Performance Testing and optimization
