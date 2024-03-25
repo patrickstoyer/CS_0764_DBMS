@@ -1,6 +1,6 @@
 #include "Filter.h"
 
-FilterPlan::FilterPlan (Plan * const input) : _input (input)
+FilterPlan::FilterPlan (Plan * const input) : _input (input), _xorParity (0)
 {
 	TRACE (true);
 } // FilterPlan::FilterPlan
@@ -10,6 +10,21 @@ FilterPlan::~FilterPlan ()
 	TRACE (true);
 	delete _input;
 } // FilterPlan::~FilterPlan
+
+void FilterPlan::updateParity(unsigned int value)
+{
+	unsigned char parity = 0;
+	unsigned char nextBit;
+	while (value > 0)
+	{
+		nextBit = value % 2;
+		value /= 2;
+		parity = parity ^ nextBit;
+	}
+	// If previous (overall parity was 1/)
+	_xorParity = _xorParity ^ parity;
+	
+} // FilterPlan::calcParity 
 
 Iterator * FilterPlan::init () const
 {

@@ -1,13 +1,18 @@
 #include "Scan.h"
+#include <stdio.h>
+#include "Record.h"
 
 ScanPlan::ScanPlan (RowCount const count) : _count (count)
 {
 	TRACE (true);
+    _file = fopen("file.binary", "w");
+	_buffer.reserve(constants::PAGE_SIZE);
 } // ScanPlan::ScanPlan
 
 ScanPlan::~ScanPlan ()
 {
 	TRACE (true);
+	fclose(_file);
 } // ScanPlan::~ScanPlan
 
 Iterator * ScanPlan::init () const
@@ -37,6 +42,24 @@ bool ScanIterator::next ()
 	if (_count >= _plan->_count)
 		return false;
 
+	createNextRecord();
 	++ _count;
 	return true;
 } // ScanIterator::next
+
+void ScanIterator::createNextRecord ()
+{
+	// 1. Make fake data
+	//  a - Random number
+	currentRecord = generateNewRecord();
+	// 2. Save fake data
+	currentRecord->storeRecord(_plan->_buffer,_plan->_file,(_count == _plan->_count - 1));
+} // ScanIterator::createNextRecord 
+
+
+Record * ScanIterator::generateNewRecord ()
+{
+	// 1. Make fake data
+	//  a - Random number
+	return new Record(random(),random(),0);// Index doesn't matter for this
+} // ScanIterator::generateNewRecord 

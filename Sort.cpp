@@ -23,7 +23,7 @@ SortIterator::SortIterator (SortPlan const * const plan) :
 {
 	TRACE (true);
 
-	while (_input->next ())  ++ _consumed;
+	while (_input->next ()) { ++ _consumed; }
 	delete _input;
 
 	traceprintf ("consumed %lu rows\n",
