@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "Record.h"
 #include <stdio.h>
 
 class FilterPlan : public Plan
@@ -11,9 +12,10 @@ public:
 private:
 	Plan * const _input;
 	unsigned char _xorParity;
-	std::vector<unsigned char> _lastKey;
+	Record * _lastRecord;
 	bool _isSorted;
 	void updateParity(unsigned int value);
+	void updateIsSorted(Record * nextRecord);
 }; // class FilterPlan
 
 class FilterIterator : public Iterator

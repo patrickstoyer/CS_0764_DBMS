@@ -29,3 +29,23 @@ Test with 0 rows and with 1 row, also 2, 3, 7 rows
 Add Plan & Iterator that verify a set of rows
 Test with 0, 1, 2, 3, 10, 29, 100, 576, 1000 rows
 ...
+
+50 mb, 125 mb, 12 gb, 120 gb
+
+Couple args:
+- c: # of records
+- s: size of records
+- o: output file (tracing output, latency, transfer time)
+
+20 byte record as example
+
+Latency:
+- Time taken by algorithm to read from storage + storing
+- Transfer time, time taken to transfer from one level to next
+
+Submission:
+- Link to Github repository (public/give access)
+- Include README file, w/ main functions/techniques, and test case results
+
+Generating/reading/writing data:
+- NO character to split data (just continuous stream)

@@ -47,19 +47,14 @@ bool ScanIterator::next ()
 	return true;
 } // ScanIterator::next
 
-void ScanIterator::createNextRecord ()
+void ScanIterator::createNextRecord()
 {
-	// 1. Make fake data
-	//  a - Random number
 	currentRecord = generateNewRecord();
-	// 2. Save fake data
 	currentRecord->storeRecord(_plan->_buffer,_plan->_file,(_count == _plan->_count - 1));
 } // ScanIterator::createNextRecord 
 
 
 Record * ScanIterator::generateNewRecord ()
 {
-	// 1. Make fake data
-	//  a - Random number
-	return new Record(random(),random(),0);// Index doesn't matter for this
+	//return new Record(random(),random(),0);// Index doesn't matter for this
 } // ScanIterator::generateNewRecord 

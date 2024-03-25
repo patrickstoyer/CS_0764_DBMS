@@ -14,9 +14,9 @@ public:
 	virtual ~Record ();
 	bool sortsBefore(Record * other); // Called to check sort order
     void storeRecord (std::vector<unsigned char> buffer, FILE* file, bool flushBuffer);
-private:
     std::vector<unsigned char> key; // An array representing the key (variable size, passed as param)
     std::vector<unsigned char> data;
+private:
     int index; // The string of data (other than key)
 }; // class Record
 

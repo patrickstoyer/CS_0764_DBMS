@@ -1,6 +1,6 @@
 #include "Filter.h"
 
-FilterPlan::FilterPlan (Plan * const input) : _input (input), _xorParity (0)
+FilterPlan::FilterPlan (Plan * const input) : _input (input), _xorParity (0), _isSorted (false)
 {
 	TRACE (true);
 } // FilterPlan::FilterPlan
@@ -25,6 +25,11 @@ void FilterPlan::updateParity(unsigned int value)
 	_xorParity = _xorParity ^ parity;
 	
 } // FilterPlan::calcParity 
+
+void FilterPlan::updateIsSorted(Record * nextRecord)
+{
+	if (!this->_lastRecord->sortsBefore(nextRecord)) _isSorted = false;
+}
 
 Iterator * FilterPlan::init () const
 {
@@ -57,6 +62,10 @@ bool FilterIterator::next ()
 	do
 	{
 		if ( ! _input->next ())  return false;
+		Record * newRecord = _input->_currentRecord;
+		_plan->updateIsSorted(newRecord);
+		_plan->updateParity(newRecord->key);
+		_plan->updateParity(newRecord->data);
 		++ _consumed;
 	} while (_consumed % 2 == 0);
 

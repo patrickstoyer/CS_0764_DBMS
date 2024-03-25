@@ -51,7 +51,7 @@ bool Record::sortsBefore(Record * other)
             return false;
         }
     }
-    return false;
+    return true;
    // return (memcmp(this->key, other->key, constants::KEY_SIZE) < 0);
 }
 
