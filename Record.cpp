@@ -42,17 +42,10 @@ bool Record::sortsBefore(Record * other)
 {
     for (unsigned int i = 0; i < this->key.size(); i++)
     {
-        if (this->key.at(i) < other->key.at(i))
-        {
-            return true;
-        }
-        else if (this->key.at(i) > other->key.at(i))
-        {
-            return false;
-        }
+        int cmp = strcmp(this->key.at(i),other->key.at(i));
+        if (cmp != 0) return (!(cmp > 0));
     }
-    return true;
-   // return (memcmp(this->key, other->key, constants::KEY_SIZE) < 0);
+    return (!(cmp > 0));
 }
 
 void Record::storeRecord (std::vector<unsigned char> buffer, FILE* file, bool flushBuffer)
