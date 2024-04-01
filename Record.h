@@ -11,7 +11,7 @@ public:
    // Record (std::fstream& file); // Creates a record from next line of file
 	virtual ~Record ();
 	bool sortsBefore(Record * other); // Called to check sort order
-    void storeRecord (char * buffer, int bufferIndex, FILE* file, bool flushBuffer);
+    void storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer);
     char * key; // An array representing the key (variable size, passed as param)
     char * data;
 private:

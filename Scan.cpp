@@ -22,7 +22,7 @@ Iterator * ScanPlan::init () const
 } // ScanPlan::init
 
 ScanIterator::ScanIterator (ScanPlan const * const plan) :
-	_plan (plan), _count (0)
+	_plan (plan), _count (0), _bufferIndex(0)
 {
 	TRACE (true);
     _file = fopen("inputfile.txt", "w");
@@ -54,7 +54,7 @@ bool ScanIterator::next ()
 void ScanIterator::createNextRecord()
 {
 	currentRecord = generateNewRecord();
-	currentRecord->storeRecord(_buffer,_bufferIndex,_file,(_count == _plan->_count - 1));
+	currentRecord->storeRecord(_buffer,&_bufferIndex,_file,(_count == _plan->_count - 1));
 } // ScanIterator::createNextRecord 
 
 

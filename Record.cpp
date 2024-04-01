@@ -46,25 +46,25 @@ bool Record::sortsBefore(Record * other)
     return (!(strncmp(this->key,other->key,constants::KEY_SIZE) > 0));
 }
 
-void Record::storeRecord (char * buffer, int bufferIndex, FILE* file, bool flushBuffer)
+void Record::storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer)
 {
-    if (bufferIndex + constants::KEY_SIZE + constants::RECORD_SIZE > constants::PAGE_SIZE)
+    if (*bufferIndexPtr + constants::KEY_SIZE + constants::RECORD_SIZE > constants::PAGE_SIZE)
     {
         // Save bufferIndex (= number of bytes stored to buffer so far) bytes
-        fwrite(buffer, 1, bufferIndex, file);
-        bufferIndex = 0;
+        fwrite(buffer, 1, *bufferIndexPtr, file);
+        *bufferIndexPtr = 0;
     }
     // Copy KEY_SIZE bytes from key to buffer, and increment index
-    strncpy(&buffer[bufferIndex],this->key,constants::KEY_SIZE);
-    bufferIndex += constants::KEY_SIZE;
+    strncpy(&buffer[*bufferIndexPtr],this->key,constants::KEY_SIZE);
+    *bufferIndexPtr += constants::KEY_SIZE;
     // Same with rest of data
-    strncpy(&buffer[bufferIndex],this->data,constants::RECORD_SIZE);
-    bufferIndex += constants::RECORD_SIZE;
+    strncpy(&buffer[*bufferIndexPtr],this->data,constants::RECORD_SIZE);
+    *bufferIndexPtr += constants::RECORD_SIZE;
     // If flushBuffer is true (e.g. last record being scanned), flush buffer to file
     if (flushBuffer)
     {
-        fwrite(buffer, 1, bufferIndex, file);
-        bufferIndex = 0;
+        fwrite(buffer, 1, *bufferIndexPtr, file);
+        *bufferIndexPtr = 0;
     }
 	// 	b - Add to file
 } // Record::storeRecord
