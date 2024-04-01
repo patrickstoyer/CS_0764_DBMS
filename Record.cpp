@@ -2,8 +2,9 @@
 #include <string.h>
 #include <fstream>
 #include <stdio.h>
+#include <stdlib.h>
 
-Record::Record(std::vector<unsigned char> key, std::vector<unsigned char> data,
+Record::Record(char * key, char * data,
     int index)
 {
 	TRACE (true);
@@ -35,27 +36,35 @@ Record::Record(std)
 
 Record::~Record ()
 {
+    free(key);
+    free(data);
 	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record * other)
 {
-    for (unsigned int i = 0; i < this->key.size(); i++)
-    {
-        int cmp = strcmp(this->key.at(i),other->key.at(i));
-        if (cmp != 0) return (!(cmp > 0));
-    }
-    return (!(cmp > 0));
+    return (!(strncmp(this->key,other->key,constants::KEY_SIZE) > 0));
 }
 
-void Record::storeRecord (std::vector<unsigned char> buffer, FILE* file, bool flushBuffer)
+void Record::storeRecord (char * buffer, int bufferIndex, FILE* file, bool flushBuffer)
 {
-	//   If buffer full, save/clear
+    if (bufferIndex + constants::KEY_SIZE + constants::RECORD_SIZE > constants::PAGE_SIZE)
+    {
+        // Save bufferIndex (= number of bytes stored to buffer so far) bytes
+        fwrite(buffer, 1, bufferIndex, file);
+        bufferIndex = 0;
+    }
+    // Copy KEY_SIZE bytes from key to buffer, and increment index
+    strncpy(buffer[bufferIndex],this->key,constants::KEY_SIZE);
+    bufferIndex += constants::KEY_SIZE;
+    // Same with rest of data
+    strncpy(buffer[bufferIndex],this->data,constants::RECORD_SIZE);
+    bufferIndex += constants::RECORD_SIZE;
+    // If flushBuffer is true (e.g. last record being scanned), flush buffer to file
+    if (flushBuffer)
+    {
+        fwrite(buffer, 1, bufferIndex, file);
+        bufferIndex = 0;
+    }
 	// 	b - Add to file
-
-    
-    // 1. Check buffer size
-    // 2. If full is true save to file, and clear
-    // 3. Add to buffer
-    // 4. If flushBuffer is true, save to file and clear
 } // Record::storeRecord

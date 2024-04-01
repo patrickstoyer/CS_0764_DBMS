@@ -11,11 +11,6 @@ public:
 	Iterator * init () const;
 private:
 	Plan * const _input;
-	unsigned char _xorParity;
-	Record * _lastRecord;
-	bool _isSorted;
-	void updateParity(unsigned int value);
-	void updateIsSorted(Record * nextRecord);
 }; // class FilterPlan
 
 class FilterIterator : public Iterator
@@ -27,5 +22,10 @@ public:
 private:
 	FilterPlan const * const _plan;
 	Iterator * const _input;
+	Record * _lastRecord;
+	bool _isSorted;
+	unsigned char _xorParity;
+	void updateParity(Record * record);
+	void updateIsSorted(Record * nextRecord);
 	RowCount _consumed, _produced;
 }; // class FilterIterator

@@ -1,7 +1,6 @@
 #include "Iterator.h"
 #include "Record.h"
 #include <stdio.h>
-#include <vector>
 
 class ScanPlan : public Plan
 {
@@ -12,9 +11,6 @@ public:
 	Iterator * init () const;
 private:
 	RowCount const _count;
-	FILE* _file;
-	std::vector<unsigned char> _buffer;
-	int bufferIndex;
 }; // class ScanPlan
 
 class ScanIterator : public Iterator
@@ -29,4 +25,7 @@ private:
 	RowCount _count;
 	void createNextRecord ();
 	Record * generateNewRecord ();
+	FILE* _file;
+	char * _buffer;
+	int _bufferIndex;
 }; // class ScanIterator

@@ -2,20 +2,18 @@
 #include <fstream>
 #include <iostream>
 #include <stdio.h>
-#include <vector>
 #include "defs.h"
-#include "Iterator.h"
 
 class Record
 {
 public:
-	Record (std::vector<unsigned char> key, std::vector<unsigned char> data, int index);
+	Record (char * key, char * data, int index);
    // Record (std::fstream& file); // Creates a record from next line of file
 	virtual ~Record ();
 	bool sortsBefore(Record * other); // Called to check sort order
-    void storeRecord (std::vector<unsigned char> buffer, FILE* file, bool flushBuffer);
-    std::vector<unsigned char> key; // An array representing the key (variable size, passed as param)
-    std::vector<unsigned char> data;
+    void storeRecord (char * buffer, int bufferIndex, FILE* file, bool flushBuffer);
+    char * key; // An array representing the key (variable size, passed as param)
+    char * data;
 private:
     int index; // The string of data (other than key)
 }; // class Record
