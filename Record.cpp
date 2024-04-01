@@ -55,10 +55,10 @@ void Record::storeRecord (char * buffer, int bufferIndex, FILE* file, bool flush
         bufferIndex = 0;
     }
     // Copy KEY_SIZE bytes from key to buffer, and increment index
-    strncpy(buffer[bufferIndex],this->key,constants::KEY_SIZE);
+    strncpy(&buffer[bufferIndex],this->key,constants::KEY_SIZE);
     bufferIndex += constants::KEY_SIZE;
     // Same with rest of data
-    strncpy(buffer[bufferIndex],this->data,constants::RECORD_SIZE);
+    strncpy(&buffer[bufferIndex],this->data,constants::RECORD_SIZE);
     bufferIndex += constants::RECORD_SIZE;
     // If flushBuffer is true (e.g. last record being scanned), flush buffer to file
     if (flushBuffer)
