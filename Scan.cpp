@@ -1,6 +1,8 @@
 #include "Scan.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <random>
 #include "Record.h"
 
 ScanPlan::ScanPlan (RowCount const count) : _count (count)
@@ -62,14 +64,17 @@ Record * ScanIterator::generateNewRecord ()
 	char * key = (char *) malloc (constants::KEY_SIZE);
 	char * data = (char *) malloc (constants::RECORD_SIZE);
 	
+  	std::default_random_engine generator;
+  	std::uniform_int_distribution<char> distribution(0,61);
+
 	int j = 0;
 	for (int i = 0; i < constants::KEY_SIZE; i++,j++)
 	{
-		key[i] = range[rand() % (sizeof(range) - 1)];
+		key[i] = range[distribution(generator)];
 	}
 	for (int i = 0; i < constants::RECORD_SIZE; i++,j++)
 	{
-		data[i] = range[rand() % (sizeof(range) - 1)];	
+		data[i] = range[distribution(generator)];	
 	}
 	return new Record(key,data,0);// Index doesn't matter for this, just use 0
 } // ScanIterator::generateNewRecord 
