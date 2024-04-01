@@ -50,7 +50,7 @@ bool Record::sortsBefore(Record * other)
 
 void Record::storeRecord (std::vector<unsigned char> buffer, FILE* file, bool flushBuffer)
 {
-	//  a - If buffer full, save/clear
+	//   If buffer full, save/clear
 	// 	b - Add to file
 
     
