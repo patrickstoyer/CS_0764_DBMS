@@ -16,16 +16,6 @@ void FilterIterator::updateParity(Record * record)
 	char parity = 0;
 	char nextBit;
 	char value;
-	for (int i = 0; i < constants::KEY_SIZE; i ++)
-	{
-		value = record->key[i];
-		while (value > 0)
-		{
-			nextBit = value % 2;
-			value /= 2;
-			parity = parity ^ nextBit;
-		}
-	}
 	for (int i = 0; i < constants::RECORD_SIZE; i ++)
 	{
 		value = record->data[i];

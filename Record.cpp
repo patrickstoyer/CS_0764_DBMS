@@ -4,11 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Record::Record(char * key, char * data,
+Record::Record(char * data,
     int index)
 {
 	TRACE (true);
-    this->key = key;
     this->data = data;
     this->index = index;
 }
@@ -36,35 +35,31 @@ Record::Record(std)
 
 Record::~Record ()
 {
-    free(key);
     free(data);
 	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record * other)
 {
-    return (!(strncmp(this->key,other->key,constants::KEY_SIZE) > 0));
+    return (!(strncmp(this->data,other->data,RECORD_SIZE) > 0));
 }
 
 void Record::storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer)
 {
-    if (*bufferIndexPtr + constants::KEY_SIZE + constants::RECORD_SIZE > constants::PAGE_SIZE)
+    // TODO Store to either SSD/HDD (pass file type as parameter)
+    if (*bufferIndexPtr + RECORD_SIZE > HDD_PAGE_SIZE)
     {
         // Save bufferIndex (= number of bytes stored to buffer so far) bytes
         fwrite(buffer, 1, *bufferIndexPtr, file);
         *bufferIndexPtr = 0;
     }
-    // Copy KEY_SIZE bytes from key to buffer, and increment index
-    strncpy(&buffer[*bufferIndexPtr],this->key,constants::KEY_SIZE);
-    *bufferIndexPtr += constants::KEY_SIZE;
-    // Same with rest of data
-    strncpy(&buffer[*bufferIndexPtr],this->data,constants::RECORD_SIZE);
-    *bufferIndexPtr += constants::RECORD_SIZE;
+    // Copy RECORD_SIZE bytes from record to buffer, and increment index
+    strncpy(&buffer[*bufferIndexPtr],this->data,RECORD_SIZE);
+    *bufferIndexPtr += RECORD_SIZE;
     // If flushBuffer is true (e.g. last record being scanned), flush buffer to file
     if (flushBuffer)
     {
         fwrite(buffer, 1, *bufferIndexPtr, file);
         *bufferIndexPtr = 0;
     }
-	// 	b - Add to file
 } // Record::storeRecord

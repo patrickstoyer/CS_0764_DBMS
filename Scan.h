@@ -1,6 +1,7 @@
 #include "Iterator.h"
 #include "Record.h"
 #include <stdio.h>
+#include <random>
 
 class ScanPlan : public Plan
 {
@@ -28,4 +29,5 @@ private:
 	FILE* _file;
 	char * _buffer;
 	int _bufferIndex;
+	static std::default_random_engine generator;
 }; // class ScanIterator

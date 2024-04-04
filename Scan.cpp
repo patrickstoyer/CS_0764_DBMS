@@ -21,12 +21,14 @@ Iterator * ScanPlan::init () const
 	return new ScanIterator (this);
 } // ScanPlan::init
 
+std::default_random_engine ScanIterator::generator;
 ScanIterator::ScanIterator (ScanPlan const * const plan) :
 	_plan (plan), _count (0), _bufferIndex(0)
 {
 	TRACE (true);
     _file = fopen("inputfile.txt", "w");
-	_buffer = (char *)malloc(constants::PAGE_SIZE);
+	_buffer = (char *)malloc(HDD_PAGE_SIZE);
+	
 } // ScanIterator::ScanIterator
 
 ScanIterator::~ScanIterator ()
@@ -61,20 +63,16 @@ void ScanIterator::createNextRecord()
 Record * ScanIterator::generateNewRecord ()
 {
 	static const char range[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	char * key = (char *) malloc (constants::KEY_SIZE);
-	char * data = (char *) malloc (constants::RECORD_SIZE);
-	
-  	std::default_random_engine generator;
-  	std::uniform_int_distribution<char> distribution(0,61);
-
-	int j = 0;
-	for (int i = 0; i < constants::KEY_SIZE; i++,j++)
+	char * data = (char *) malloc (RECORD_SIZE);
+	// If appending new line at end, we'll generate RECORD_SIZE - 1 byte random, then newline;
+	int max = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
+	std::uniform_int_distribution<char> distribution(0,61);
+  	for (int i = 0; i < RECORD_SIZE; i++)
 	{
-		key[i] = range[distribution(generator)];
+		char next = distribution(generator);
+		data[i] = range[next];	
 	}
-	for (int i = 0; i < constants::RECORD_SIZE; i++,j++)
-	{
-		data[i] = range[distribution(generator)];	
-	}
-	return new Record(key,data,0);// Index doesn't matter for this, just use 0
+	// Add newline
+	if (USE_NEWLINES) data[max] = '\n';
+	return new Record(data,0);// Index doesn't matter for this, just use 0
 } // ScanIterator::generateNewRecord 

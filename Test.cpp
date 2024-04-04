@@ -4,14 +4,81 @@
 #include "Sort.h"
 #include "Record.h"
 #include <fstream>
+#include <stdlib.h>
+#include <string.h>
+
+
+int RECORD_SIZE = 20; // Default to 20 bytes
+int CACHE_SIZE = 1000000;
+int SSD_PAGE_SIZE =  20000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB (= 20,000 B)
+int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
+int MEM_SIZE =   100000000; // Default to 100 MB (=  100,000,000 B)
+long long SSD_SIZE = 10000000000; // Default to 10GB (= 10,000,000,000 B)
+bool USE_NEWLINES = false;
+
+void parseInput(int argc, char * argv [],int * count, int * size, char * outputFileName)
+{
+	char * nextval;
+	char valsSet = 0;
+	for (int i = 0; i < argc; i++)
+	{
+		nextval = argv[i];
+		
+		if (strcmp(nextval,"-c")==0)
+		{
+			i++;
+			*count = (int) strtol(argv[i],NULL,10);
+			valsSet +=0b00000001;
+		} else if (strcmp(nextval,"-s")==0)
+		{
+			i++;
+			valsSet +=0b00000010;
+			*size = (int) strtol(argv[i],NULL,10);
+		} else if (strcmp(nextval,"-o")==0)
+		{
+			i++;
+			valsSet +=0b00000100;
+			strcpy(outputFileName, argv[i]);	
+		} else if (strcmp(nextval,"-n")==0)
+		{
+			USE_NEWLINES = true;
+		} 
+	}
+	// Set defaults
+	if ((valsSet & 0b00000001) == 0)
+	{
+		*count = 20;
+	}
+	if ((valsSet & 0b00000010) == 0)
+	{
+		*size = 1024;
+	}
+	if ((valsSet & 0b00000100) == 0)
+	{
+		char arr[] = "outputFile.txt";
+		strcpy(outputFileName, arr);
+	}
+} // parseInput
 
 int main (int argc, char * argv [])
-{
+{	
+	char outputFileName[64];
+	int count,size;
+	parseInput(argc,argv,&count,&size,outputFileName);
+	if ((count <= 0) || (size <= 0))
+	{
+		return 0;
+	}
+	else 
+	{
+		RECORD_SIZE = size;
+		if (USE_NEWLINES) RECORD_SIZE += 1;
+	}
 	TRACE (true);
-	std::fstream f("data.txt");
-	std::cout << constants::KEY_SIZE << constants::RECORD_SIZE << constants::CACHE_SIZE << constants::PAGE_SIZE << constants::MEM_SIZE << constants::SSD_SIZE;
-  	//Record * record = new Record(f);
-	Plan * const plan = new ScanPlan (7);
+
+	//std::fstream f("data.txt");
+	//Record * record = new Record(f);
+	Plan * const plan = new ScanPlan (count);
 	// new FilterPlan ( new SortPlan ( new FilterPlan ( new ScanPlan (7) ) ) );
 
 	// TODO:
