@@ -24,7 +24,7 @@ private:
 	Iterator * const _input;
 	Record * _lastRecord;
 	bool _isSorted;
-	unsigned char _xorParity;
+	char _xorParity;
 	void updateParity(Record * record);
 	void updateIsSorted(Record * nextRecord);
 	RowCount _consumed, _produced;

@@ -20,7 +20,6 @@ public:
 	ScanIterator (ScanPlan const * const plan);
 	~ScanIterator ();
 	bool next ();
-	Record * currentRecord;
 private:
 	ScanPlan const * const _plan;
 	RowCount _count;

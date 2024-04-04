@@ -7,7 +7,7 @@
 Record::Record(char * data,
     int index)
 {
-	TRACE (true);
+	// TRACE (true);
     this->data = data;
     this->index = index;
 }

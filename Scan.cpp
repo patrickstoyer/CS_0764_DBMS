@@ -43,7 +43,7 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
-	TRACE (true);
+	// TRACE (true);
 
 	if (_count >= _plan->_count)
 		return false;
@@ -55,8 +55,8 @@ bool ScanIterator::next ()
 
 void ScanIterator::createNextRecord()
 {
-	currentRecord = generateNewRecord();
-	currentRecord->storeRecord(_buffer,&_bufferIndex,_file,(_count == _plan->_count - 1));
+	this->_currentRecord = generateNewRecord();
+	this->_currentRecord->storeRecord(_buffer,&_bufferIndex,_file,(_count == _plan->_count - 1));
 } // ScanIterator::createNextRecord 
 
 

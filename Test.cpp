@@ -78,7 +78,7 @@ int main (int argc, char * argv [])
 
 	//std::fstream f("data.txt");
 	//Record * record = new Record(f);
-	Plan * const plan = new ScanPlan (count);
+	Plan * const plan = new FilterPlan ( new ScanPlan (count) );
 	// new FilterPlan ( new SortPlan ( new FilterPlan ( new ScanPlan (7) ) ) );
 
 	// TODO:
