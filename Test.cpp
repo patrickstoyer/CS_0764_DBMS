@@ -15,34 +15,46 @@ int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB 
 int MEM_SIZE =   100000000; // Default to 100 MB (=  100,000,000 B)
 long long SSD_SIZE = 10000000000; // Default to 10GB (= 10,000,000,000 B)
 bool USE_NEWLINES = false;
+unsigned SEED = -1;
 
 void parseInput(int argc, char * argv [],int * count, int * size, char * outputFileName)
 {
 	char * nextval;
 	char valsSet = 0;
-	for (int i = 0; i < argc; i++)
+	for (int i = 1; i < argc; i++)
 	{
 		nextval = argv[i];
-		
 		if (strcmp(nextval,"-c")==0)
 		{
 			i++;
 			*count = (int) strtol(argv[i],NULL,10);
 			valsSet +=0b00000001;
-		} else if (strcmp(nextval,"-s")==0)
+		} 
+		else if (strcmp(nextval,"-s")==0)
 		{
 			i++;
 			valsSet +=0b00000010;
 			*size = (int) strtol(argv[i],NULL,10);
-		} else if (strcmp(nextval,"-o")==0)
+		} 
+		else if (strcmp(nextval,"-seed")==0)
+		{
+			i++;
+			SEED = (int) strtol(argv[i],NULL,10);
+		} 
+		else if (strcmp(nextval,"-o")==0)
 		{
 			i++;
 			valsSet +=0b00000100;
 			strcpy(outputFileName, argv[i]);	
-		} else if (strcmp(nextval,"-n")==0)
+		} 
+		else if (strcmp(nextval,"-n")==0)
 		{
 			USE_NEWLINES = true;
-		} 
+		}
+		else
+		{
+			std::cout << "Unknown argument ignored: " << nextval << "\n";
+		}
 	}
 	// Set defaults
 	if ((valsSet & 0b00000001) == 0)

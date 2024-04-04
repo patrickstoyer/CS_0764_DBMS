@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <chrono>
 #include <random>
 #include "Record.h"
 
@@ -21,13 +22,15 @@ Iterator * ScanPlan::init () const
 	return new ScanIterator (this);
 } // ScanPlan::init
 
-std::default_random_engine ScanIterator::generator;
+std::default_random_engine ScanIterator::generator(std::chrono::system_clock::now().time_since_epoch().count());
+
 ScanIterator::ScanIterator (ScanPlan const * const plan) :
 	_plan (plan), _count (0), _bufferIndex(0)
 {
 	TRACE (true);
     _file = fopen("inputfile.txt", "w");
 	_buffer = (char *)malloc(HDD_PAGE_SIZE);
+	if (SEED > 0) generator.seed(SEED);
 	
 } // ScanIterator::ScanIterator
 

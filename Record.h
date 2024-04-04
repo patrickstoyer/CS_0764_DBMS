@@ -24,3 +24,4 @@ extern int HDD_PAGE_SIZE;
 extern int MEM_SIZE;
 extern long long SSD_SIZE;
 extern bool USE_NEWLINES;
+extern unsigned SEED;
