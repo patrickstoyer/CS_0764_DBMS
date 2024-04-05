@@ -22,7 +22,7 @@ public:
 	virtual ~Iterator ();
 	void run ();
 	virtual bool next () = 0;
-	Record * _currentRecord;
+	Record _currentRecord;
 private:
 	RowCount _count;
 }; // class Iterator

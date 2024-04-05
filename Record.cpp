@@ -5,11 +5,15 @@
 #include <stdlib.h>
 
 Record::Record(char * data,
-    int index)
-{
+    int index) //: data(data), index(index)
+{ 
 	// TRACE (true);
     this->data = data;
     this->index = index;
+}
+
+Record::Record()
+{
 }
 /*
 Record::Record(std)
@@ -36,12 +40,15 @@ Record::Record(std)
 Record::~Record ()
 {
     free(data);
-	TRACE (true);
+	//TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record * other)
 {
-    return (!(strncmp(this->data,other->data,RECORD_SIZE) > 0));
+    int cmp = strncmp(this->data,other->data,RECORD_SIZE);
+    bool retVal = (!(cmp > 0));
+    //std::cerr << "1COMP = " << cmp << " \n\t DATA = " << this->data << " \n\t OTHER = " << other.data << "\n";
+    return retVal;
 }
 
 void Record::storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer)

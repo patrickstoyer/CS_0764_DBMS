@@ -22,7 +22,7 @@ public:
 private:
 	FilterPlan const * const _plan;
 	Iterator * const _input;
-	Record * _lastRecord;
+	Record _lastRecord;
 	bool _isSorted;
 	char _xorParity;
 	void updateParity(Record * record);

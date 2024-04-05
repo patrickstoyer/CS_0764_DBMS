@@ -15,7 +15,7 @@ int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB 
 int MEM_SIZE =   100000000; // Default to 100 MB (=  100,000,000 B)
 long long SSD_SIZE = 10000000000; // Default to 10GB (= 10,000,000,000 B)
 bool USE_NEWLINES = false;
-unsigned SEED = -1;
+int SEED = -1;
 
 void parseInput(int argc, char * argv [],int * count, int * size, char * outputFileName)
 {
@@ -86,7 +86,7 @@ int main (int argc, char * argv [])
 		RECORD_SIZE = size;
 		if (USE_NEWLINES) RECORD_SIZE += 1;
 	}
-	TRACE (true);
+	//TRACE (true);
 
 	//std::fstream f("data.txt");
 	//Record * record = new Record(f);
