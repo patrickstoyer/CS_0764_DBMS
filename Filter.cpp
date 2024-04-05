@@ -35,15 +35,8 @@ void FilterIterator::updateParity(Record * record)
 void FilterIterator::updateIsSorted(Record * nextRecord)
 {
 	if (!_isSorted) return; // If we already know it's not sorted don't continue checking
-	//Record rec = (this->_lastRecord);
-	//std::cerr<<"here1bisjh";
-	//rec.sortsBefore(nextRecord);
-	//std::cerr<<"here2";
-
 	if ((this->_lastRecord).sortsBefore(nextRecord)) return;
-	
 	_isSorted = false;
-	//std::cerr<<"oijpi09209423";
 }
 
 Iterator * FilterPlan::init () const
@@ -82,9 +75,7 @@ bool FilterIterator::next ()
 	if ( ! _input->next ())  return false;
 	
 	Record newRecord = _input->_currentRecord;
-	//std::cout << "NEW: " << &newRecord << "LAST: " << &(this->_lastRecord) << "\n";
 	if (_consumed == 0) this->_lastRecord = newRecord;
-	//std::cout << "\tNEW: " << &newRecord << "LAST: " << &(this->_lastRecord)  << "\n";
 	
 	updateParity(&newRecord);
 	updateIsSorted(&newRecord);

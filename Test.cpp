@@ -9,11 +9,11 @@
 
 
 int RECORD_SIZE = 20; // Default to 20 bytes
-int CACHE_SIZE = 1000000;
-int SSD_PAGE_SIZE =  20000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB (= 20,000 B)
-int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
-int MEM_SIZE =   100000000; // Default to 100 MB (=  100,000,000 B)
-long long SSD_SIZE = 10000000000; // Default to 10GB (= 10,000,000,000 B)
+int CACHE_SIZE = 1000;//000;
+int SSD_PAGE_SIZE =  20;//000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB (= 20,000 B)
+int HDD_PAGE_SIZE = 500;//000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
+int MEM_SIZE =   100000;//000; // Default to 100 MB (=  100,000,000 B)
+long long SSD_SIZE = 10000000;//000; // Default to 10GB (= 10,000,000,000 B)
 bool USE_NEWLINES = false;
 int SEED = -1;
 
