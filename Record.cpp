@@ -6,8 +6,8 @@
 
 Record::Record(char * data,
     int index) //: data(data), index(index)
-{ 
-	TRACE (true);
+{
+//	TRACE (true);
     this->data = data;
     this->index = index;
 }
@@ -40,7 +40,7 @@ Record::Record(std)
 Record::~Record ()
 {
     free(data);
-	TRACE (true);
+//	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record * other)

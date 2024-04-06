@@ -86,7 +86,7 @@ int main (int argc, char * argv [])
 		RECORD_SIZE = size;
 		if (USE_NEWLINES) RECORD_SIZE += 1;
 	}
-	TRACE (true);
+    //TRACE (true);
 
 	//std::fstream f("data.txt");
 	//Record * record = new Record(f);

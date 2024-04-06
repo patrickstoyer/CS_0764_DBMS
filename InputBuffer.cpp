@@ -12,6 +12,7 @@ InputBuffer::InputBuffer(char * filename, char bufferType) : _bufferIndexPtr(0),
 {
     _inputFile = fopen(filename, "r");
 	_inputBuffer = (char *)malloc((bufferType == 1) ? HDD_PAGE_SIZE : SSD_PAGE_SIZE);
+    read();
 }
 InputBuffer::~InputBuffer()
 {
@@ -24,12 +25,14 @@ Record * InputBuffer::get()
 
     int charsToRead = (_bufferIndexPtr + RECORD_SIZE > page_size) ? (page_size - _bufferIndexPtr) : RECORD_SIZE;
     // Copy RECORD_SIZE bytes from record to buffer, and increment index
-    strncpy(&_inputBuffer[_bufferIndexPtr],data,charsToRead);
+    strncpy(data,&_inputBuffer[_bufferIndexPtr],charsToRead);
+    _bufferIndexPtr += charsToRead;
     if (charsToRead < RECORD_SIZE)
     {
         charsToRead = RECORD_SIZE - charsToRead;
         read();
-        strncpy(&_inputBuffer[_bufferIndexPtr],data,charsToRead);
+        strncpy(data,&_inputBuffer[_bufferIndexPtr],charsToRead);
+        _bufferIndexPtr += charsToRead;
     }
     return new Record(data,0);
 }

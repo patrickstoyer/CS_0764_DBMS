@@ -2,12 +2,12 @@
 
 FilterPlan::FilterPlan (Plan * const input) : _input (input)
 {
-	TRACE (true);
+    //TRACE (true);
 } // FilterPlan::FilterPlan
 
 FilterPlan::~FilterPlan ()
 {
-	TRACE (true);
+//	TRACE (true);
 	delete _input;
 } // FilterPlan::~FilterPlan
 
@@ -42,7 +42,7 @@ void FilterIterator::updateIsSorted(Record * nextRecord)
 
 Iterator * FilterPlan::init () const
 {
-	TRACE (true);
+    //TRACE (true);
 	return new FilterIterator (this);
 } // FilterPlan::init
 
@@ -50,7 +50,7 @@ FilterIterator::FilterIterator (FilterPlan const * const plan) :
 	_plan (plan), _input (plan->_input->init ()),
 	_consumed (0), _produced (0), _xorParity (0), _isSorted (true)
 {
-	TRACE (true);
+//	TRACE (true);
 } // FilterIterator::FilterIterator
 
 FilterIterator::~FilterIterator ()
@@ -67,7 +67,7 @@ FilterIterator::~FilterIterator ()
 
 bool FilterIterator::next ()
 {
-	TRACE (true);
+//	TRACE (true);
 
 	//do
 	//{
