@@ -8,17 +8,17 @@
 
 ScanPlan::ScanPlan (RowCount const count) : _count (count)
 {
-	//TRACE (true);
+	TRACE (true);
 } // ScanPlan::ScanPlan
 
 ScanPlan::~ScanPlan ()
 {
-	//TRACE (true);
+	TRACE (true);
 } // ScanPlan::~ScanPlan
 
 Iterator * ScanPlan::init () const
 {
-//	TRACE (true);
+	TRACE (true);
 	return new ScanIterator (this);
 } // ScanPlan::init
 
@@ -27,7 +27,7 @@ std::default_random_engine ScanIterator::generator(std::chrono::system_clock::no
 ScanIterator::ScanIterator (ScanPlan const * const plan) :
 	_plan (plan), _count (0), _bufferIndex(0)
 {
-	//TRACE (true);
+	TRACE (true);
     _file = fopen("inputfile.txt", "w");
 	_buffer = (char *)malloc(HDD_PAGE_SIZE);
 	if (SEED > 0) generator.seed(SEED);
@@ -36,7 +36,7 @@ ScanIterator::ScanIterator (ScanPlan const * const plan) :
 
 ScanIterator::~ScanIterator ()
 {
-	//TRACE (true);
+	TRACE (true);
 	fclose(_file);
 	free(_buffer);
 	traceprintf ("produced %lu of %lu rows\n",
@@ -46,7 +46,7 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
-	// TRACE (true);
+	TRACE (true);
 
 	if (_count >= _plan->_count)
 		return false;

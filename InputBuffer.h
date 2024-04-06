@@ -6,13 +6,13 @@ class InputBuffer
 {
 public:
     InputBuffer();
-    InputBuffer(FILE * inputFile, char * buffer, char bufferType);
+    InputBuffer(char * inputFile, char bufferType);
 	~InputBuffer ();
 	Record * get();
 private:
     void read();
 	FILE * _inputFile;
-    char * buffer; 
-    int bufferIndexPtr,
-    char type ; // 1 = SSD / 2 = HDD
+    char * _inputBuffer; 
+    int _bufferIndexPtr;
+    char _type ; // 1 = HDD / 2 = SSD
 }; // class InputBuffer

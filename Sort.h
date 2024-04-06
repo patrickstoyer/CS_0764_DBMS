@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "InputBuffer.h"
 
 class SortPlan : public Plan
 {
@@ -21,4 +22,5 @@ private:
 	SortPlan const * const _plan;
 	Iterator * const _input;
 	RowCount _consumed, _produced;
+    InputBuffer _inputBuffer;
 }; // class SortIterator
