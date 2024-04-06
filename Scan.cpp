@@ -29,16 +29,15 @@ ScanIterator::ScanIterator (ScanPlan const * const plan) :
 {
 //	TRACE (true);
     _file = fopen("inputfile.txt", "w");
-	_buffer = (char *)malloc(HDD_PAGE_SIZE);
+	_buffer = new char[HDD_PAGE_SIZE];
+    setvbuf(_file,_buffer,_IOFBF,HDD_PAGE_SIZE);
 	if (SEED > 0) generator.seed(SEED);
 	
 } // ScanIterator::ScanIterator
 
 ScanIterator::~ScanIterator ()
 {
-//	TRACE (true);
-	fclose(_file);
-	free(_buffer);
+	TRACE (true);
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_count),
 			(unsigned long) (_plan->_count));
@@ -49,8 +48,11 @@ bool ScanIterator::next ()
     //TRACE (true);
 
 	if (_count >= _plan->_count)
-		return false;
-
+    {
+        fclose(_file);
+        delete [] _buffer;
+        return false;
+    }
 	createNextRecord();
 	++ _count;
 	return true;
@@ -59,14 +61,14 @@ bool ScanIterator::next ()
 void ScanIterator::createNextRecord()
 {
 	this->_currentRecord = *generateNewRecord();
-	this->_currentRecord.storeRecord(_buffer,&_bufferIndex,_file,(_count == _plan->_count - 1));
+	this->_currentRecord.storeRecord(_file,(_count == _plan->_count - 1));
 } // ScanIterator::createNextRecord 
 
 
 Record * ScanIterator::generateNewRecord ()
 {
 	static const char range[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	char * data = (char *) malloc (RECORD_SIZE);
+	char * data = new char[RECORD_SIZE];
 	// If appending new line at end, we'll generate RECORD_SIZE - 1 byte random, then newline;
 	int max = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
 	std::uniform_int_distribution<char> distribution(0,61);

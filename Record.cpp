@@ -39,34 +39,24 @@ Record::Record(std)
 
 Record::~Record ()
 {
-    free(data);
+    delete data;
 //	TRACE (true);
 }
 // Called to check sort order   
-bool Record::sortsBefore(Record * other)
+bool Record::sortsBefore(Record& other)
 {
-    int cmp = strncmp(this->data,other->data,RECORD_SIZE);
+    int cmp = strncmp(this->data,other.data,RECORD_SIZE);
     bool retVal = (!(cmp > 0));
     //std::cerr << "1COMP = " << cmp << " \n\t DATA = " << this->data << " \n\t OTHER = " << other.data << "\n";
     return retVal;
 }
 
-void Record::storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer)
+void Record::storeRecord (FILE * file, bool flush)
 {
     // TODO Store to either SSD/HDD (pass file type as parameter)
-    if (*bufferIndexPtr + RECORD_SIZE > HDD_PAGE_SIZE)
+    fwrite(this->data,1,RECORD_SIZE,file);
+    if (flush)
     {
-        // Save bufferIndex (= number of bytes stored to buffer so far) bytes
-        fwrite(buffer, 1, *bufferIndexPtr, file);
-        *bufferIndexPtr = 0;
-    }
-    // Copy RECORD_SIZE bytes from record to buffer, and increment index
-    strncpy(&buffer[*bufferIndexPtr],this->data,RECORD_SIZE);
-    *bufferIndexPtr += RECORD_SIZE;
-    // If flushBuffer is true (e.g. last record being scanned), flush buffer to file
-    if (flushBuffer)
-    {
-        fwrite(buffer, 1, *bufferIndexPtr, file);
-        *bufferIndexPtr = 0;
+        fflush(file);
     }
 } // Record::storeRecord

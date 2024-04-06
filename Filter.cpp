@@ -11,7 +11,7 @@ FilterPlan::~FilterPlan ()
 	delete _input;
 } // FilterPlan::~FilterPlan
 
-void FilterIterator::updateParity(Record * record)
+void FilterIterator::updateParity(Record& record)
 {
 	char parity = 0;
 	//char nextBit;
@@ -19,7 +19,7 @@ void FilterIterator::updateParity(Record * record)
 
 	for (int i = 0; i < RECORD_SIZE; i ++)
 	{
-		value = record->data[i];
+		value = record.data[i];
 		parity = parity ^ value;
 		/*while (value > 0)
 		{
@@ -33,7 +33,7 @@ void FilterIterator::updateParity(Record * record)
 	
 } // FilterPlan::calcParity 
 
-void FilterIterator::updateIsSorted(Record * nextRecord)
+void FilterIterator::updateIsSorted(Record& nextRecord)
 {
 	if (!_isSorted) return; // If we already know it's not sorted don't continue checking
 	if ((this->_lastRecord).sortsBefore(nextRecord)) return;
@@ -75,9 +75,9 @@ bool FilterIterator::next ()
 	Record newRecord = _input->_currentRecord;
 	if (_consumed == 0) this->_lastRecord = newRecord;
 
-	updateParity(&newRecord);
+	updateParity(newRecord);
 	
-	updateIsSorted(&newRecord);
+	updateIsSorted(newRecord);
 	//std::cout << "HERE2";
 	_lastRecord = newRecord;
 	//std::cout << "HERE3";

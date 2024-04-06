@@ -25,7 +25,7 @@ private:
 	Record _lastRecord;
 	bool _isSorted;
 	char _xorParity;
-	void updateParity(Record * record);
-	void updateIsSorted(Record * nextRecord);
+	void updateParity(Record& record);
+	void updateIsSorted(Record& nextRecord);
 	RowCount _consumed, _produced;
 }; // class FilterIterator

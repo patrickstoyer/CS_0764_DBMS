@@ -28,13 +28,18 @@ SortIterator::SortIterator (SortPlan const * const plan) :
 
 	traceprintf ("consumed %lu rows\n",
 			(unsigned long) (_consumed));
-    _inputBuffer = InputBuffer("inputfile.txt",1);
+
+    _outputFile = fopen("outputfile.txt", "w");
+    _outputBuffer = new char[SSD_PAGE_SIZE];
+    _inputBuffer = new InputBuffer("inputfile.txt",1);
 
 } // SortIterator::SortIterator
 
 SortIterator::~SortIterator ()
 {
 	TRACE (true);
+    fclose(_outputFile);
+    delete [] _outputBuffer;
 	delete _input;
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
@@ -47,8 +52,10 @@ bool SortIterator::next ()
 
 	if (_produced >= _consumed)  return false;
 
-    this->_currentRecord = *_inputBuffer.get();
-    std::cerr << this->_currentRecord.data;
+    this->_currentRecord = *_inputBuffer->next();
+    this->_currentRecord.storeRecord(_outputFile,(_produced == _consumed - 1));
+   // _inputBuffer.print();
+    //std::cerr << this->_currentRecord.data;
 	++ _produced;
 	return true;
 } // SortIterator::next

@@ -1,44 +1,29 @@
 #include "InputBuffer.h"
 #include "Record.h"
 #include <string.h>
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 
 InputBuffer::InputBuffer() 
 { 
 }
-InputBuffer::InputBuffer(char * filename, char bufferType) : _bufferIndexPtr(0),_type(bufferType)
+InputBuffer::InputBuffer(const char * filename, char bufferType) : _bufferIndexPtr(0),_type(bufferType)
+
 {
     _inputFile = fopen(filename, "r");
-	_inputBuffer = (char *)malloc((bufferType == 1) ? HDD_PAGE_SIZE : SSD_PAGE_SIZE);
-    read();
+    int bufferSize = (bufferType == 1) ? HDD_PAGE_SIZE : SSD_PAGE_SIZE;
+    _inputBuffer = new char[bufferSize];
+    setvbuf(_inputFile,_inputBuffer,_IOFBF,bufferSize);
 }
 InputBuffer::~InputBuffer()
 {
-
+    delete [] _inputBuffer;
+    fclose(_inputFile);
 }
-Record * InputBuffer::get()
-{
-    char * data = (char *) malloc(RECORD_SIZE);
-    int page_size = (_type == 1) ? HDD_PAGE_SIZE : SSD_PAGE_SIZE;
 
-    int charsToRead = (_bufferIndexPtr + RECORD_SIZE > page_size) ? (page_size - _bufferIndexPtr) : RECORD_SIZE;
-    // Copy RECORD_SIZE bytes from record to buffer, and increment index
-    strncpy(data,&_inputBuffer[_bufferIndexPtr],charsToRead);
-    _bufferIndexPtr += charsToRead;
-    if (charsToRead < RECORD_SIZE)
-    {
-        charsToRead = RECORD_SIZE - charsToRead;
-        read();
-        strncpy(data,&_inputBuffer[_bufferIndexPtr],charsToRead);
-        _bufferIndexPtr += charsToRead;
-    }
+Record * InputBuffer::next()
+{
+    char * data = new char [RECORD_SIZE];
+    fread(data,1,RECORD_SIZE,_inputFile);
     return new Record(data,0);
-}
-void InputBuffer::read()
-{
-    int page_size = (_type == 1) ? HDD_PAGE_SIZE : SSD_PAGE_SIZE;
-    fgets(_inputBuffer, page_size + 1, _inputFile); // + 1 because num - 1 chars are read
-    _bufferIndexPtr = 0;
 }

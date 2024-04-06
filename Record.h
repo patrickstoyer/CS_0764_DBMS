@@ -9,11 +9,11 @@ public:
 	Record (char * data, int index);
     Record (); 
 	virtual ~Record ();
-	bool sortsBefore(Record * other); // Called to check sort order
-    void storeRecord (char * buffer, int * bufferIndexPtr, FILE * file, bool flushBuffer);
+	bool sortsBefore(Record& other); // Called to check sort order
+    void storeRecord (FILE * file, bool flush);
     char * data;
+    int index;
 private:
-    int index; 
 }; // class Record
 
 extern int RECORD_SIZE;

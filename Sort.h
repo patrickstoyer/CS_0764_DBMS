@@ -22,5 +22,8 @@ private:
 	SortPlan const * const _plan;
 	Iterator * const _input;
 	RowCount _consumed, _produced;
-    InputBuffer _inputBuffer;
+    InputBuffer * _inputBuffer;
+    FILE* _outputFile;
+    char * _outputBuffer;
+    int _bufferIndex;
 }; // class SortIterator

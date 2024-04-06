@@ -1,14 +1,16 @@
 #include "Iterator.h"
 #include "Record.h"
+#include "InputStream.h"
 #include <stdio.h>
 
-class InputBuffer
+class InputBuffer : InputStream
 {
 public:
     InputBuffer();
-    InputBuffer(char * inputFile, char bufferType);
+    InputBuffer(const char * inputFile, char bufferType);
 	~InputBuffer ();
-	Record * get();
+	Record * next();
+    void print();
 private:
     void read();
 	FILE * _inputFile;
