@@ -69,11 +69,9 @@ void PriorityQueue::add(Record& nextRecord, int stream, InputStream& inputStream
 }
 void PriorityQueue::remove(int stream)
 {
-    int index = _arr[MIN_NODE].index;
     char * lf = new char[1]{'~'};
-    Record sentRecord = Record(lf,index);
-    _arr[MIN_NODE].exchange(sentRecord);
-    add(_arr[MIN_NODE],index);
+    Record * sentRecord = new Record(lf,stream);
+    add(*sentRecord,stream);
 }
 int PriorityQueue::parent(int index)
 {
@@ -130,6 +128,12 @@ void PriorityQueue::storeRecords(FILE * _outputFile)
 {
     char * lf = new char[1]{'~'};
     Record lateFence(lf,0);
+    // First remove anything beyond capacity (note this assumes records are added from lowest stream to greatest)
+    for (int i = _size ; i < _capacity ; i ++)
+    {
+        remove(i);
+    }
+
     for (Record * currentRec = next(); !lateFence.sortsBefore(*currentRec) ; currentRec = next())
     {
         if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
