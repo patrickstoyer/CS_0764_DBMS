@@ -1,5 +1,6 @@
 #include "Iterator.h"
 #include "InputBuffer.h"
+#include "PriorityQueue.h"
 
 class SortPlan : public Plan
 {
@@ -26,4 +27,8 @@ private:
     FILE* _outputFile;
     char * _outputBuffer;
     int _bufferIndex;
+    PriorityQueue _cacheRuns[95];
+    PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
+    PriorityQueue _ssdRuns; //_
+    int _streamIndex;
 }; // class SortIterator

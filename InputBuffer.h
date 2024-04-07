@@ -3,7 +3,7 @@
 #include "InputStream.h"
 #include <stdio.h>
 
-class InputBuffer : InputStream
+class InputBuffer : public InputStream
 {
 public:
     InputBuffer();

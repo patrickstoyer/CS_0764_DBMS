@@ -11,6 +11,7 @@ public:
 	virtual ~Record ();
 	bool sortsBefore(Record& other); // Called to check sort order
     void storeRecord (FILE * file, bool flush);
+    void exchange(Record& other);
     char * data;
     int index;
 private:

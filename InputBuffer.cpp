@@ -1,5 +1,6 @@
 #include "InputBuffer.h"
 #include "Record.h"
+#include "PriorityQueue.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,10 @@ InputBuffer::~InputBuffer()
 Record * InputBuffer::next()
 {
     char * data = new char [RECORD_SIZE];
-    fread(data,1,RECORD_SIZE,_inputFile);
-    return new Record(data,0);
+    if (fread(data,1,RECORD_SIZE,_inputFile) != 0)
+    {
+        return new Record(data,0);
+    }
+    char * lf = new char[1]{'~'};
+    return new Record(lf,0);
 }

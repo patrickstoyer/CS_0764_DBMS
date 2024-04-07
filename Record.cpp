@@ -39,14 +39,14 @@ Record::Record(std)
 
 Record::~Record ()
 {
-    delete data;
+    delete [] data;
 //	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record& other)
 {
     int cmp = strncmp(this->data,other.data,RECORD_SIZE);
-    bool retVal = (!(cmp > 0));
+    bool retVal = (!(cmp > 0)); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
     //std::cerr << "1COMP = " << cmp << " \n\t DATA = " << this->data << " \n\t OTHER = " << other.data << "\n";
     return retVal;
 }
@@ -59,4 +59,15 @@ void Record::storeRecord (FILE * file, bool flush)
     {
         fflush(file);
     }
-} // Record::storeRecord
+}
+
+void Record::exchange(Record &other)
+{
+    char * dataTmp = other.data;
+    int indexTmp = other.index;
+    other.data = this->data;
+    other.index = this->index;
+    this->data = dataTmp;
+    this->index = indexTmp;
+}
+// Record::storeRecord
