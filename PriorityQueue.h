@@ -7,9 +7,10 @@ public:
     PriorityQueue(int capacity, int type);
     ~PriorityQueue();
     void storeRecords(FILE * _outputFile);
+    Record & peek (); // Returns arr[0] (the min value)
     void add(Record& nextRecord, int stream); // Adds a new node from _inputStreams[stream], assumes stream exists
-    void add(Record& nextRecord, int stream, InputStream& inputStream); // Adds a new node from inputStream, and sets _inputStreams[stream] = inputStream
-    void FillFromStreams();
+    void add(int stream, InputStream& inputStream); // Adds a new node from inputStream, and sets _inputStreams[stream] = inputStream
+    void repair() override;
     bool isFull();
     Record * next () override; // Return arr[0] and replace with late_fence
     Record * nextAndReplace(); // Return arr[0] and replaces it from the stream it came from
@@ -17,7 +18,6 @@ private:
     void initializePQ();
     void remove(int stream); // Removes the value that came from stream
     static int parent(int index); // Gets index of parent of index
-    Record peek (); // Returns arr[0] (the min value)
     int _size; // Number of streams/inputs currently being used
     int _capacity; // Maximum size of array
     int _type ; // 0 = Cache level. (CAPACITY = 1 MB / RECORD_SIZE)
@@ -33,6 +33,7 @@ private:
     Record * _arr; // Sorted data - Size of arr = size of streams (except cache level PQ)
     InputStream ** _inputStreams; // Pointers to streams of data _inputStreams[0] should be a
     //
+    void addFromStream(int stream);
 };
 
 static char LATE_FENCE = '~'; // Sorts after [A-Za-z0-9]

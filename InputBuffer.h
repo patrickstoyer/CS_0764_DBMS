@@ -9,10 +9,9 @@ public:
     InputBuffer();
     InputBuffer(const char * inputFile, char bufferType);
 	~InputBuffer ();
-	Record * next();
-    void print();
+	Record * next() override;
+    void repair() override;
 private:
-    void read();
 	FILE * _inputFile;
     char * _inputBuffer; 
     int _bufferIndexPtr;

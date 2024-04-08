@@ -70,4 +70,11 @@ void Record::exchange(Record &other)
     this->data = dataTmp;
     this->index = indexTmp;
 }
+
+Record::Record(Record &other)
+{
+    this->data = new char [RECORD_SIZE];
+    strcpy(this->data,other.data);
+    this->index = other.index;
+}
 // Record::storeRecord

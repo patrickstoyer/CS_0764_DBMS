@@ -7,6 +7,7 @@ class Record
 {
 public:
 	Record (char * data, int index);
+    Record (Record& other);
     Record (); 
 	virtual ~Record ();
 	bool sortsBefore(Record& other); // Called to check sort order

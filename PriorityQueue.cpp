@@ -43,7 +43,7 @@ void PriorityQueue::initializePQ()
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
 {
-    if (strncmp(nextRecord.data,&LATE_FENCE,1) != 0)
+    if ((_type == 0)&&(strncmp(nextRecord.data,&LATE_FENCE,1) != 0))
     {
         _size ++;
     }
@@ -62,10 +62,17 @@ void PriorityQueue::add(Record& nextRecord, int stream)
 
 }
 
-void PriorityQueue::add(Record& nextRecord, int stream, InputStream& inputStream)
+void PriorityQueue::add(int stream, InputStream& inputStream)
 {
-    add(nextRecord,stream);
+    //add(nextRecord,stream);
+    _size++;
     _inputStreams[stream] = &inputStream;
+}
+
+void PriorityQueue::addFromStream(int stream)
+{
+    if (stream >= _size) return;
+    add(*_inputStreams[stream]->next(),stream);
 }
 void PriorityQueue::remove(int stream)
 {
@@ -78,7 +85,7 @@ int PriorityQueue::parent(int index)
     return  (index / 2);
 }
 
-Record PriorityQueue::peek ()
+Record & PriorityQueue::peek ()
 {
     return _arr[MIN_NODE];
 }
@@ -97,24 +104,18 @@ Record * PriorityQueue::next()
     return retVal;
 }
 
-void PriorityQueue::FillFromStreams ()
-{
-    int _numStreams = (_type == 0) ? 1 : _capacity;
-    bool stop = false;
-    while (!stop && _capacity > _size)
-    {
-        stop = true;
-        for (int i = 0 ; i < _numStreams; i++)
-        {
-            add(*_inputStreams[i]->next(),i);
-        }
-    }
-}
-
 Record * PriorityQueue::nextAndReplace ()
 {
     int index = _arr[MIN_NODE].index;
-    Record * retVal = _inputStreams[index]->next();
+    Record * retVal;
+    if ((index > _size) || (_type == 0 ))
+    {
+        char * lf = new char[1]{'!'};
+        retVal = new Record(lf,index);
+    } else
+    {
+        retVal = _inputStreams[index]->next();
+    }
     _arr[MIN_NODE].exchange(*retVal);
     add(_arr[MIN_NODE],index);
     if (strncmp(retVal->data,&EARLY_FENCE,1) == 0)
@@ -129,12 +130,17 @@ void PriorityQueue::storeRecords(FILE * _outputFile)
     char * lf = new char[1]{'~'};
     Record lateFence(lf,0);
     // First remove anything beyond capacity (note this assumes records are added from lowest stream to greatest)
-    for (int i = _size ; i < _capacity ; i ++)
+    repair();
+    if (_type != 0)
     {
-        remove(i);
+        for (int i = 0; i < _size; i++)
+        {
+            _inputStreams[i]->repair();
+            addFromStream(i);
+        }
     }
 
-    for (Record * currentRec = next(); !lateFence.sortsBefore(*currentRec) ; currentRec = next())
+    for (Record * currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
     {
         if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
         currentRec->storeRecord(_outputFile,false);
@@ -146,4 +152,12 @@ PriorityQueue::~PriorityQueue()
 {
     delete [] _arr;
     delete [] _inputStreams;
+}
+
+void PriorityQueue::repair()
+{
+    for (int i = _size ; i < _capacity ; i ++)
+    {
+        remove(i);
+    }
 }

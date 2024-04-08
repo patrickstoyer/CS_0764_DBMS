@@ -28,7 +28,12 @@ private:
     char * _outputBuffer;
     int _bufferIndex;
     PriorityQueue _cacheRuns[95];
+    PriorityQueue _cacheRunPQ;
     PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
     PriorityQueue _ssdRuns; //_
     int _streamIndex;
+    int _cacheIndex;
+    int _numCaches;
+
+    void finishMerge();
 }; // class SortIterator

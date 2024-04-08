@@ -32,3 +32,7 @@ Record * InputBuffer::next()
     char * lf = new char[1]{'~'};
     return new Record(lf,0);
 }
+
+void InputBuffer::repair() {
+
+}
