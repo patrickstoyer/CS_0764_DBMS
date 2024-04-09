@@ -19,27 +19,24 @@ void PriorityQueue::initializePQ()
     _arr = new Record[_capacity];
     if (_type==0) // HDD -> Cache
     {
-        _inputStreams = new InputStream*[1];
-        _inputStreams[0] = new InputBuffer("inputfile.txt",1);
+        _inputStreams = nullptr;
     }
-    else if (_type == 1) // Cache -> Mem
+    else if ((_type == 1) || (_type == 2)) // 1. Cache -> Mem or 2. SSD + HDD + type 1 PQ
     {
-        _inputStreams = new InputStream*[_capacity]; // _capacity should be ~95
-    } else if (_type == 2) // SSD + type 1 PQ
-    {
-        _inputStreams = new InputStream*[_capacity];
-    } else if (_type == 3) // HDD -> HDD
-    {
-        _inputStreams = new InputStream*[_capacity];
+        _inputStreams = new InputStream * [_capacity]; // _capacity should be ~95
     }
+}
 
+void PriorityQueue::reset()
+{
     for (int i = 0 ; i < _capacity; i++)
     {
         char * ef = new char[1]{'!'};
-        //ef[0] = '!';
-        ; // Initialize with early fence -- inserting will push up to appropriate
+        ; // Initialize with early fence
         _arr[i]=*(new Record{ef,i});
+
     }
+    _isReadyToNext = false;
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
 {
@@ -92,6 +89,10 @@ Record & PriorityQueue::peek ()
 
 Record * PriorityQueue::next()
 {
+    if (!_isReadyToNext)
+    {
+        ready();
+    }
     int index = _arr[MIN_NODE].index;
     char * lf = new char[1]{'~'};
     Record * retVal = new Record(lf,index);
@@ -101,11 +102,20 @@ Record * PriorityQueue::next()
     {
         retVal = next();
     }
+    if (strncmp(retVal->data,&EARLY_FENCE,1)==0)
+    {
+        reset();
+    }
+    _lastReturnedIndex = retVal->index;
     return retVal;
 }
 
 Record * PriorityQueue::nextAndReplace ()
 {
+    if (!_isReadyToNext)
+    {
+        ready();
+    }
     int index = _arr[MIN_NODE].index;
     Record * retVal;
     if ((index > _size) || (_type == 0 ))
@@ -122,13 +132,51 @@ Record * PriorityQueue::nextAndReplace ()
     {
         retVal = nextAndReplace();
     }
+    if (strncmp(retVal->data,&LATE_FENCE,1)==0)
+    {
+        reset();
+    }
+    _lastReturnedIndex = retVal->index;
     return retVal;
 }
 
-void PriorityQueue::storeRecords(FILE * _outputFile)
+bool PriorityQueue::storeNextAnd (Record& swapVal)
+{
+    if (!_isReadyToNext)
+    {
+        ready();
+    }
+    if (_type != 2) return next();
+    // If swapVal is
+    if (swapVal.sortsBefore(peek()))
+    {
+        return next();
+    }
+    int index = _arr[MIN_NODE].index;
+    _arr[MIN_NODE].exchange(swapVal);
+    _inputStreams[index]->add(_arr[MIN_NODE]);
+    add(_arr[MIN_NODE],index);
+    _lastReturnedIndex = swapVal.index;
+    return &swapVal;
+}
+
+void PriorityQueue::storeRecords(FILE * outputFile, int lastCache)
 {
     char * lf = new char[1]{'~'};
     Record lateFence(lf,0);
+
+    ready();
+
+    for (Record * currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
+    {
+        if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
+        currentRec->storeRecord(_outputFile,false);
+    }
+    fflush(_outputFile);
+}
+
+void PriorityQueue::ready()
+{
     // First remove anything beyond capacity (note this assumes records are added from lowest stream to greatest)
     repair();
     if (_type != 0)
@@ -139,13 +187,6 @@ void PriorityQueue::storeRecords(FILE * _outputFile)
             addFromStream(i);
         }
     }
-
-    for (Record * currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
-    {
-        if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
-        currentRec->storeRecord(_outputFile,false);
-    }
-    fflush(_outputFile);
 }
 
 PriorityQueue::~PriorityQueue()

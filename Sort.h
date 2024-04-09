@@ -26,14 +26,35 @@ private:
     InputBuffer * _inputBuffer;
     FILE* _outputFile;
     char * _outputBuffer;
+    FILE* _ssdOutputFile;
+    char * _ssdOutputBuffer;
     int _bufferIndex;
     PriorityQueue _cacheRuns[95];
+    int _lastCache;
     PriorityQueue _cacheRunPQ;
+    PriorityQueue _finalPQ;
     PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
     PriorityQueue _ssdRuns; //_
     int _streamIndex;
     int _cacheIndex;
     int _numCaches;
-
+    int _ssdCount;
+    int _hddCount;
     void finishMerge();
+    void gracefulDegrade(Record& nextRecord);
+    bool _gracefulDegrade;
+    bool _firstPass;
+    Record _lastStored;
+
+    void moveToNextCache();
+
+    void addToCacheRuns(Record &nextRecord);
+
+    static char *getOutputFilename(bool _type, int _count);
+
+    long long int ssdSpaceRemaining() const;
+
+    int _bytesWritten;
+
+    void gracefulDegrade(Record &nextRecord, bool newFile);
 }; // class SortIterator

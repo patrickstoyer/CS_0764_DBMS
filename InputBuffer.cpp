@@ -36,3 +36,6 @@ Record * InputBuffer::next()
 void InputBuffer::repair() {
 
 }
+void InputBuffer::add(Record rec) {
+
+}

@@ -11,6 +11,7 @@ public:
 	~InputBuffer ();
 	Record * next() override;
     void repair() override;
+    void add(Record record) override;
 private:
 	FILE * _inputFile;
     char * _inputBuffer; 
