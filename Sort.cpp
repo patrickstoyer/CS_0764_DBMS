@@ -121,7 +121,17 @@ void SortIterator::moveToNextCache()
 void SortIterator::addToCacheRuns(Record& nextRecord)
 {
     _cacheRuns[_cacheIndex].add(nextRecord, _streamIndex++);
-    if (_cacheRuns[_cacheIndex].isFull()) moveToNextCache();
+    if (_cacheRuns[_cacheIndex].isFull())
+    {
+        if (_gracefulDegrade)
+        {
+            // If we're here, we filled the cache during the graceful degradation
+            // We must clear the cache and stop graceful degradation
+            _cacheRunPQ.storeRecords(_outputFile,_lastCache);;
+            _gracefulDegrade = false;
+        }
+        moveToNextCache();
+    }
 }
 
 void SortIterator::gracefulDegrade(Record& nextRecord, bool newFile)
@@ -142,12 +152,11 @@ void SortIterator::gracefulDegrade(Record& nextRecord, bool newFile)
     }
     if (!_cacheRunPQ.storeNextAndSwap(nextRecord)) // Returns true if successfully swapped in nextRecord
     {
-        _cacheRuns[_cacheIndex].add(nextRecord);
+        _cacheRuns[_cacheIndex].add(nextRecord,_cacheIndex++);
+        addToCacheRuns(nextRecord);
         if (_cacheRuns[_cacheIndex].isFull())
         {
-            _cacheRunPQ.storeRecords(_outputFile,_lastCache);
-            moveToNextCache();
-            _gracefulDegrade = false;
+            moveToNextCache()
         }
     }
     _bytesWritten += RECORD_SIZE;

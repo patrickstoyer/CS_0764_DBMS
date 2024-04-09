@@ -33,9 +33,10 @@ Record * InputBuffer::next()
     return new Record(lf,0);
 }
 
-void InputBuffer::repair() {
-
-}
-void InputBuffer::add(Record rec) {
-
+void InputBuffer::repair() {}
+bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile)
+{
+    Record * nextRecord = next();
+    nextRecord->storeRecord(outputFile,false);
+    return false; // Always return false -- we cannot swap the input into the existing file
 }

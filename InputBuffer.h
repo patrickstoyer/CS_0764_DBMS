@@ -9,9 +9,10 @@ public:
     InputBuffer();
     InputBuffer(const char * inputFile, char bufferType);
 	~InputBuffer ();
-	Record * next() override;
+    Record * next() override;
+    Record * peek() override;
     void repair() override;
-    void add(Record record) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile) override;
 private:
 	FILE * _inputFile;
     char * _inputBuffer; 

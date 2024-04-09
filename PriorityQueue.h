@@ -7,6 +7,7 @@ public:
     PriorityQueue(int capacity, int type);
     ~PriorityQueue();
     void storeRecords(FILE * outputFile, int lastCache);
+    bool storeNextAndSwap(Record& record, FILE * outputFile);
     Record & peek (); // Returns arr[0] (the min value)
     void add(Record& nextRecord, int stream); // Adds a new node from _inputStreams[stream], assumes stream exists
     void add(int stream, InputStream& inputStream); // Adds a new node from inputStream, and sets _inputStreams[stream] = inputStream
@@ -36,6 +37,9 @@ private:
     void addFromStream(int stream);
 
     void reset();
+
+    void ready(int skipIndex);
+    void replacePeek(Record &record);
 };
 
 static char LATE_FENCE = '~'; // Sorts after [A-Za-z0-9]
