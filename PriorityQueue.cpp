@@ -25,6 +25,7 @@ void PriorityQueue::initializePQ()
     {
         _inputStreams = new InputStream * [_capacity]; // _capacity should be ~95
     }
+    reset();
 }
 
 void PriorityQueue::reset()
@@ -36,6 +37,7 @@ void PriorityQueue::reset()
         _arr[i]=*(new Record{ef,i});
 
     }
+    _size = 0;
     _isReadyToNext = false;
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
@@ -81,9 +83,9 @@ int PriorityQueue::parent(int index)
     return  (index / 2);
 }
 
-Record & PriorityQueue::peek ()
+Record * PriorityQueue::peek ()
 {
-    return _arr[MIN_NODE];
+    return &_arr[MIN_NODE];
 }
 
 Record * PriorityQueue::next()
@@ -144,9 +146,9 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
     }
     if (_type == 0)
     {
-        peek().storeRecord(outputFile, false);
+        peek()->storeRecord(outputFile, false);
         // If record is less than the min we just saved, we can't add it
-        if (record.sortsBefore(peek()))
+        if (record.sortsBefore(*peek()))
         {
             // Call next to remove min, and return false
             next();
@@ -163,16 +165,17 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
     {
         // If not at cache level, we will in generally just recurse to that level
         // 1. Get stream index of min
-        int index = peek().index;
+        int index = peek()->index;
         // 2. Recurse to the min's input stream. This should handle:
         //    - Storing the min (note that if somehow the min w/in the _inputStreams differs from the overall PQ, this will fail)
         //    - Comparing the stored min with the new record (to see if we can swap it into the cache)
         //    - Swapping into the cach
         bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile);
         replacePeek(*_inputStreams[index]->peek()); // We will always want the peek of the stream to be in the array
+        return retVal;
     }
 
-    return retVal;
+    return false;
 }
 // Replaces arr[0] with record and re-sorts
 void PriorityQueue::replacePeek(Record& record)
@@ -212,6 +215,7 @@ void PriorityQueue::ready(int skipIndex)
             addFromStream(i);
         }
     }
+    _isReadyToNext = true;
 }
 
 PriorityQueue::~PriorityQueue()

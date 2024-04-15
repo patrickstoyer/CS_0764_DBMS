@@ -40,7 +40,6 @@ private:
     int _numCaches;
     int _ssdCount;
     int _hddCount;
-    void finishMerge();
     void gracefulDegrade(Record& nextRecord);
     bool _gracefulDegrade;
     bool _firstPass;
@@ -53,8 +52,6 @@ private:
     static char *getOutputFilename(bool _type, int _count);
 
     long long int ssdSpaceRemaining() const;
-
     int _bytesWritten;
-
-    void gracefulDegrade(Record &nextRecord, bool newFile);
+    bool _newGDFile;
 }; // class SortIterator

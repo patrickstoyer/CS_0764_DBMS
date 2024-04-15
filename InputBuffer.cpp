@@ -22,6 +22,17 @@ InputBuffer::~InputBuffer()
     fclose(_inputFile);
 }
 
+Record * InputBuffer::peek()
+{
+    char * data = new char [RECORD_SIZE];
+    if (fread(data,1,RECORD_SIZE,_inputFile) != 0)
+    {
+        fseek(_inputFile,-RECORD_SIZE,SEEK_CUR);
+        return new Record(data,0);
+    }
+    char * lf = new char[1]{'~'};
+    return new Record(lf,0);
+}
 Record * InputBuffer::next()
 {
     char * data = new char [RECORD_SIZE];

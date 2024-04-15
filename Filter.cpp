@@ -21,12 +21,6 @@ void FilterIterator::updateParity(Record& record)
 	{
 		value = record.data[i];
 		parity = parity ^ value;
-		/*while (value > 0)
-		{
-			nextBit = value % 2;
-			value /= 2;
-			parity = parity ^ nextBit;
-		}*/
 	}
 	
 	_xorParity = _xorParity ^ parity;
@@ -72,14 +66,14 @@ bool FilterIterator::next ()
 	//do
 	//{
 	if ( ! _input->next ())  return false;
-	Record newRecord = _input->_currentRecord;
-	if (_consumed == 0) this->_lastRecord = newRecord;
+	this->_currentRecord = _input->_currentRecord;
+	if (_consumed == 0) this->_lastRecord = this->_currentRecord;
 
-	updateParity(newRecord);
+	updateParity(this->_currentRecord);
 	
-	updateIsSorted(newRecord);
+	updateIsSorted(this->_currentRecord);
 	//std::cout << "HERE2";
-	_lastRecord = newRecord;
+	_lastRecord = this->_currentRecord;
 	//std::cout << "HERE3";
 	++ _consumed;
 	//} while (_consumed % 2 == 0);

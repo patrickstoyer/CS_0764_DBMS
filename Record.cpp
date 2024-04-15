@@ -45,7 +45,7 @@ Record::~Record ()
 // Called to check sort order   
 bool Record::sortsBefore(Record& other)
 {
-    int cmp = strncmp(this->data,other.data,RECORD_SIZE);
+    int cmp = strncmp(this->data,other.data,KEY_SIZE);
     bool retVal = (!(cmp > 0)); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
     //std::cerr << "1COMP = " << cmp << " \n\t DATA = " << this->data << " \n\t OTHER = " << other.data << "\n";
     return retVal;

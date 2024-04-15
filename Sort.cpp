@@ -56,11 +56,11 @@ SortIterator::SortIterator (SortPlan const * const plan):
         _finalPQ.add(0,_cacheRunPQ);
         for (int i = 1; i <= _ssdCount; i++ )
         {
-            _finalPQ.add(i , new InputBuffer( getOutputFilename(true , i) , 2));
+            _finalPQ.add(i , *(new InputBuffer( getOutputFilename(true , i) , 2)));
         }
         for (int i = 1; i <= _hddCount; i++ )
         {
-            _finalPQ.add(i + _ssdCount , new InputBuffer(getOutputFilename(false, i) , 1 ));
+            _finalPQ.add(i + _ssdCount , *(new InputBuffer(getOutputFilename(false, i) , 1 )));
         }
     }
 
@@ -102,6 +102,7 @@ void SortIterator::moveToNextCache()
     if ((_lastCache == 0 && _cacheIndex == 1) || (_lastCache == 94 && _cacheIndex == 93))
     {
         _gracefulDegrade = true;
+        _newGDFile = true;
     }
     else if (_lastCache == 0)
     {
@@ -134,12 +135,13 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
     }
 }
 
-void SortIterator::gracefulDegrade(Record& nextRecord, bool newFile)
+void SortIterator::gracefulDegrade(Record& nextRecord)
 {
     if (_firstPass) _firstPass = false;
 
     long long ssdSpace = ssdSpaceRemaining();
-    if (newFile || ssdSpace < RECORD_SIZE) {
+    if (_newGDFile || ssdSpace < RECORD_SIZE) {
+        _newGDFile = true;
         if (_ssdCount > 0) fclose(_outputFile);
         if (ssdSpace > RECORD_SIZE) {
             _ssdCount++;
@@ -150,13 +152,13 @@ void SortIterator::gracefulDegrade(Record& nextRecord, bool newFile)
         }
         _bytesWritten = 0;
     }
-    if (!_cacheRunPQ.storeNextAndSwap(nextRecord)) // Returns true if successfully swapped in nextRecord
+    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,_outputFile)) // Returns true if successfully swapped in nextRecord
     {
         _cacheRuns[_cacheIndex].add(nextRecord,_cacheIndex++);
         addToCacheRuns(nextRecord);
         if (_cacheRuns[_cacheIndex].isFull())
         {
-            moveToNextCache()
+            moveToNextCache();
         }
     }
     _bytesWritten += RECORD_SIZE;
