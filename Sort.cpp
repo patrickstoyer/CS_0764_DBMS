@@ -26,11 +26,11 @@ SortIterator::SortIterator (SortPlan const * const plan):
     _outputFile = fopen("outputfile.txt", "w");
     _outputBuffer = new char[SSD_PAGE_SIZE];
     _cacheRuns[_cacheIndex] = *(new PriorityQueue(CACHE_SIZE / RECORD_SIZE,0));
-    _cacheRunPQ = *(new PriorityQueue(95,1));
+    _cacheRunPQ = *(new PriorityQueue(5,1));
     _cacheRunPQ.add(_cacheIndex,_cacheRuns[_cacheIndex]);
 
     // Looping over _consumed inputs
-    while (_input->next ())
+    while (_input->next())
     {
         // Get the next record from the input
         Record nextRecord = _input->_currentRecord;
@@ -49,6 +49,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
     if (_firstPass)
     {
         _finalPQ = _cacheRunPQ;
+        _cacheRunPQ = PriorityQueue();
     }
     else
     {
@@ -80,14 +81,20 @@ SortIterator::~SortIterator ()
 			(unsigned long) (_consumed));
 } // SortIterator::~SortIterator
 
-bool SortIterator::next ()
+bool SortIterator::next()
 {
     if (_produced >= _consumed)
-    {
+     {
+        char * lf = new char[1]{'~'};
+        this->_currentRecord.~Record();
+        new (&this->_currentRecord) Record(lf,0);
         return false;
     }
-    this->_currentRecord = *_finalPQ.next();
-    this->_currentRecord.storeRecord(_outputFile,(_produced == _consumed - 1));
+    char * lf = new char[1]{'~'};
+    if (_produced > 0) this->_currentRecord.~Record();
+    new (&this->_currentRecord) Record(lf,0);
+    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile);
+    //this->_currentRecord.storeRecord(_outputFile,(_produced == _consumed - 1));
 	++ _produced;
 	return true;
 } // SortIterator::next
@@ -104,11 +111,11 @@ void SortIterator::moveToNextCache()
         _gracefulDegrade = true;
         _newGDFile = true;
     }
-    else if (_lastCache == 0)
+    else if (_cacheIndex == 0)
     {
         _lastCache = 94;
     }
-    else if (_lastCache == 94)
+    else if (_cacheIndex == 94)
     {
         _lastCache = 0;
     }

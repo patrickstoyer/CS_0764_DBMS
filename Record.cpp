@@ -1,4 +1,5 @@
 #include "Record.h"
+#include "PriorityQueue.h"
 #include <string.h>
 #include <fstream>
 #include <stdio.h>
@@ -14,46 +15,27 @@ Record::Record(char * data,
 
 Record::Record()
 {
+    this->data = nullptr;
 }
-/*
-Record::Record(std)
-{
-	TRACE (true);
-  //  fprintf(stderr,"HELLOWFLLEIOW1");
-    if (!file.is_open()) return;
-    char line[constants::KEY_SIZE + constants::RECORD_SIZE];
-    
-    //fprintf(stderr,"HELLOWFLLEIOW2");
-  //  file.getline(line,sizeof(line)/sizeof(*line));
-   // fprintf(stderr,line);
-    //fprintf(stderr,"POOPOO");
-    while(file.peek()!=EOF)
-    {
-        file.getline(line,sizeof(line)/sizeof(*line));
-        fprintf(stderr,line);
-        fprintf(stderr,"POOPOO");
-    }
-    std::cout<<sizeof(line)/sizeof(*line);
-    return;
-}*/
 
 Record::~Record ()
 {
-    delete [] data;
+   delete [] data;
 //	TRACE (true);
 }
 // Called to check sort order   
-bool Record::sortsBefore(Record& other)
+bool Record::sortsBefore(Record& other) const
 {
     int cmp = strncmp(this->data,other.data,KEY_SIZE);
-    bool retVal = (!(cmp > 0)); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
-    //std::cerr << "1COMP = " << cmp << " \n\t DATA = " << this->data << " \n\t OTHER = " << other.data << "\n";
+    bool retVal = (cmp <= 0); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
+
     return retVal;
 }
 
-void Record::storeRecord (FILE * file, bool flush)
+void Record::storeRecord (FILE * file, bool flush) const
 {
-    // TODO Store to either SSD/HDD (pass file type as parameter)
+    if (strncmp(this->data,&LATE_FENCE,1) == 0 ||strncmp(this->data,&EARLY_FENCE,1) ==0) return;
+    // Note that buffering happens automatically, we add buffer array when we open the file
     fwrite(this->data,1,RECORD_SIZE,file);
     if (flush)
     {

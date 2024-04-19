@@ -44,7 +44,7 @@ Record * InputBuffer::next()
     return new Record(lf,0);
 }
 
-void InputBuffer::repair() {}
+void InputBuffer::ready(int skipIndex) {}
 bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile)
 {
     Record * nextRecord = next();

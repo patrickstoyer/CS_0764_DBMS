@@ -4,7 +4,11 @@
 #include "InputBuffer.h"
 #include "InputStream.h"
 
-PriorityQueue::PriorityQueue() { }
+PriorityQueue::PriorityQueue()
+{
+    this->_arr = nullptr;
+    this->_inputStreams = nullptr;
+}
 PriorityQueue::PriorityQueue(int capacity, int type) : _capacity(capacity), _type(type),_size(0)
 {
     initializePQ();
@@ -48,17 +52,17 @@ void PriorityQueue::add(Record& nextRecord, int stream)
     }
 
     nextRecord.index = stream;
-    Record candidate = nextRecord;
+    Record * candidate = new Record(nextRecord);
     for (int index = parent(_capacity + stream); index != 0; index = parent(index))
     {
         // Compare
-        if (!candidate.sortsBefore(_arr[index]))
+        if (!candidate->sortsBefore(_arr[index]))
         {
-            candidate.exchange(_arr[index]);
+            candidate->exchange(_arr[index]);
         }
     }
-    candidate.exchange(_arr[MIN_NODE]);
-
+    candidate->exchange(_arr[MIN_NODE]);
+    delete candidate;
 }
 
 void PriorityQueue::add(int stream, InputStream& inputStream)
@@ -75,8 +79,8 @@ void PriorityQueue::addFromStream(int stream)
 void PriorityQueue::remove(int stream)
 {
     char * lf = new char[1]{'~'};
-    Record * sentRecord = new Record(lf,stream);
-    add(*sentRecord,stream);
+    Record sentRecord(lf,stream);
+    add(sentRecord,stream);
 }
 int PriorityQueue::parent(int index)
 {
@@ -171,7 +175,7 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
         //    - Comparing the stored min with the new record (to see if we can swap it into the cache)
         //    - Swapping into the cach
         bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile);
-        replacePeek(*_inputStreams[index]->peek()); // We will always want the peek of the stream to be in the array
+        replacePeek(*_inputStreams[index]->peek(),false); // We will always want the peek of the stream to be in the array
         return retVal;
     }
 
@@ -180,8 +184,24 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
 // Replaces arr[0] with record and re-sorts
 void PriorityQueue::replacePeek(Record& record)
 {
+    replacePeek(record,true);
+}
+// Replaces arr[0] with record and re-sorts
+void PriorityQueue::replacePeek(Record& record,bool swap)
+{
     int index = _arr[MIN_NODE].index;
-    _arr[MIN_NODE].exchange(record);
+    if (swap)
+    {
+        _arr[MIN_NODE].exchange(record);
+    }
+    else // Otherwise copy record data to min node
+    {
+        int dataSize = ((strncmp(record.data,&LATE_FENCE,1)==0) || (strncmp(record.data,&EARLY_FENCE,1)==0)) ? 1 : RECORD_SIZE;
+        _arr[MIN_NODE].~Record();
+        char * data = new char[dataSize];
+        strncpy(data,record.data,dataSize);
+        new (&_arr[MIN_NODE]) Record(data,index);
+    }
     add(_arr[MIN_NODE],index);
 }
 
@@ -207,11 +227,11 @@ void PriorityQueue::ready(int skipIndex)
     // First remove anything beyond capacity (note this assumes records are added from lowest stream to greatest)
     repair();
     if (_type != 0)
-    {
+        {
         for (int i = 0; i < _size; i++)
         {
             if (i == skipIndex) continue;
-            _inputStreams[i]->repair();
+            _inputStreams[i]->ready(-1);
             addFromStream(i);
         }
     }

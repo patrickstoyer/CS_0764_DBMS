@@ -11,7 +11,7 @@ public:
 	~InputBuffer ();
     Record * next() override;
     Record * peek() override;
-    void repair() override;
+    void ready(int skipIndex) override;
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
 private:
 	FILE * _inputFile;

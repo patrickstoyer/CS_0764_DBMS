@@ -65,8 +65,16 @@ bool FilterIterator::next ()
 
 	//do
 	//{
-	if ( ! _input->next ())  return false;
-	this->_currentRecord = _input->_currentRecord;
+	if ( ! _input->next ())
+    {
+        char * lf = new char[1]{'~'};
+        this->_currentRecord.~Record();
+        new (&this->_currentRecord) Record(lf,0);
+        lf = new char[1]{'~'};
+        new (&this->_lastRecord) Record(lf,0);
+        return false;
+    }
+	new (&this->_currentRecord) Record(_input->_currentRecord);
 	if (_consumed == 0) this->_lastRecord = this->_currentRecord;
 
 	updateParity(this->_currentRecord);

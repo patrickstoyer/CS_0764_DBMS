@@ -33,8 +33,8 @@ private:
     int _lastCache;
     PriorityQueue _cacheRunPQ;
     PriorityQueue _finalPQ;
-    PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
-    PriorityQueue _ssdRuns; //_
+    //PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
+    //PriorityQueue _ssdRuns;
     int _streamIndex;
     int _cacheIndex;
     int _numCaches;
@@ -46,11 +46,8 @@ private:
     Record _lastStored;
 
     void moveToNextCache();
-
     void addToCacheRuns(Record &nextRecord);
-
     static char *getOutputFilename(bool _type, int _count);
-
     long long int ssdSpaceRemaining() const;
     int _bytesWritten;
     bool _newGDFile;

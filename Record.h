@@ -10,8 +10,8 @@ public:
     Record (Record& other);
     Record (); 
 	virtual ~Record ();
-	bool sortsBefore(Record& other); // Called to check sort order
-    void storeRecord (FILE * file, bool flush);
+	bool sortsBefore(Record& other) const; // Called to check sort order
+    void storeRecord (FILE * file, bool flush) const;
     void exchange(Record& other);
     char * data;
     int index;
