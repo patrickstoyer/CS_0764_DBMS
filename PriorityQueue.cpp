@@ -3,12 +3,12 @@
 #include "InputBuffer.h"
 #include "InputStream.h"
 
-PriorityQueue::PriorityQueue()
+PriorityQueue::PriorityQueue() : _dir(1)
 {
     this->_arr = nullptr;
     this->_inputStreams = nullptr;
 }
-PriorityQueue::PriorityQueue(int capacity, int type) : _capacity(capacity), _type(type),_size(0)
+PriorityQueue::PriorityQueue(int capacity, int type) : _capacity(capacity), _type(type),_size(0),_dir(1)
 {
     initializePQ();
 }
@@ -33,6 +33,10 @@ void PriorityQueue::initializePQ()
 
 void PriorityQueue::reset()
 {
+    reset(0,-1);
+}
+void PriorityQueue::reset(int size,int dirMult)
+{
     for (int i = 0 ; i < _capacity; i++)
     {
         char * ef = new char[1]{'!'};
@@ -40,7 +44,8 @@ void PriorityQueue::reset()
         _arr[i]=*(new Record{ef,i});
 
     }
-    _size = 0;
+    _size = size;
+    _dir *= dirMult;
     _isReadyToNext = false;
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
@@ -233,16 +238,21 @@ void PriorityQueue::storeRecords(FILE * outputFile, int lastCache)
         delete currentRec;
     }
 
-    reset();
+    reset(1,-1);
 }
 
 void PriorityQueue::ready(int skipIndex)
 {
+    if (_isReadyToNext) return;
     // First remove anything beyond capacity (note this assumes records are added from the lowest stream to greatest)
     repair();
     if (_type != 0)
     {
-        for (int i = 0; i < _size; i++)
+        int min = 0, max = _size;
+        if (_dir == -1) {
+            min = _capacity - _size, max = _capacity;
+        }
+        for (int i = min; i < max; i++)
         {
             if (i == skipIndex) continue;
             _inputStreams[i]->ready(-1);
@@ -260,7 +270,11 @@ PriorityQueue::~PriorityQueue()
 
 void PriorityQueue::repair()
 {
-    for (int i = _size ; i < _capacity ; i ++)
+    int min = _size, max = _capacity;
+    if (_dir == -1){
+        min = 0, max = _capacity - _size;
+    }
+    for (int i = min ; i < max ; i ++)
     {
         remove(i);
     }

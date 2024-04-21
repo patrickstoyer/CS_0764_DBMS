@@ -49,6 +49,6 @@ private:
     long long int ssdSpaceRemaining() const;
     int _bytesWritten;
     bool _newGDFile;
-    FILE * tmpOutputFile;
-    char * tmpOutputBuffer;
+    FILE * tmpOutputFile{};
+    char * tmpOutputBuffer{};
 }; // class SortIterator

@@ -34,12 +34,13 @@ private:
     InputStream ** _inputStreams{}; // Pointers to streams of data _inputStreams[0] should be a
     int _lastReturnedIndex{};
     bool _isReadyToNext{}; // If true, we have repaired the array since the last early fence insertion
-
     void addFromStream(int stream);
     void reset();
+    void reset(int size, int dir);
     void repair();
     void replacePeek(Record &record);
     void replacePeek(Record &record,bool swap);
+    int _dir{};
 };
 
 static char LATE_FENCE = '~'; // Sorts after [A-Za-z0-9]
