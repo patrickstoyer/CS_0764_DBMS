@@ -33,7 +33,7 @@ void PriorityQueue::initializePQ()
 
 void PriorityQueue::reset()
 {
-    reset(0,-1);
+    reset(0,1);
 }
 void PriorityQueue::reset(int size,int dirMult)
 {
@@ -50,7 +50,6 @@ void PriorityQueue::reset(int size,int dirMult)
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
 {
-    std::cerr << "a";
     bool checkDupes = REMOVE_DUPES;
     if (_type == 0)
     {
@@ -94,7 +93,8 @@ void PriorityQueue::add(int stream, InputStream& inputStream)
 
 void PriorityQueue::addFromStream(int stream)
 {
-    if (stream >= _size) return;
+    if ((_dir == 1) && (stream >= _size)) return;
+    if ((_dir == -1) && (stream < _capacity - _size)) return;
     Record val{};
     val.copy(*_inputStreams[stream]->peek());
     add(val,stream);
@@ -165,8 +165,11 @@ Record * PriorityQueue::nextAndReplace ()
     _lastReturnedIndex = retVal->index;
     return retVal;
 }
-
 bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
+{
+    return storeNextAndSwap(record,outputFile,false);
+}
+bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool alwaysSwap)
 {
     if (!_isReadyToNext)
     {
@@ -176,17 +179,17 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
     {
         peek()->storeRecord(outputFile, false);
         // If record is less than the min we just saved, we can't add it
-        if (record.sortsBefore(*peek()))
+        if (!record.sortsBefore(*peek())||alwaysSwap)
         {
-            // Call next to remove min, and return false
-            next();
-            return false;
+            //Doesn't sort before or we always want to swap so replace peek
+            replacePeek(record);
+            return true;
         }
         else
         {
-            // Otherwise, we can add the next record
-            replacePeek(record);
-            return true;
+            // Otherwise, call next to remove min, and return false
+            next();
+            return false;
         }
     }
     else
@@ -198,7 +201,7 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
         //    - Storing the min (note that if somehow the min w/in the _inputStreams differs from the overall PQ, this will fail)
         //    - Comparing the stored min with the new record (to see if we can swap it into the cache)
         //    - Swapping into the cache
-        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile);
+        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile,alwaysSwap);
         replacePeek(*_inputStreams[index]->peek(),false); // We will always want the peek of the stream to be in the array
         return retVal;
     }
@@ -279,3 +282,4 @@ void PriorityQueue::repair()
         remove(i);
     }
 }
+

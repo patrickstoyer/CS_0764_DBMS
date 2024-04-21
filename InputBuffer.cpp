@@ -45,7 +45,19 @@ Record * InputBuffer::next()
 void InputBuffer::ready(int skipIndex) {}
 bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile)
 {
+    return storeNextAndSwap(record,outputFile,false);
+}
+
+bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap)
+{
     Record * nextRecord = next();
     nextRecord->storeRecord(outputFile,false);
+    if (alwaysSwap)
+    {
+        record = *nextRecord;
+        nextRecord->data = nullptr;
+    }
+    delete nextRecord;
+
     return false; // Always return false -- we cannot swap the input into the existing file
 }

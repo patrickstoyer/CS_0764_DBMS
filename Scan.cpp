@@ -45,33 +45,23 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
-    std::cerr<<"scana";
-	if (_count >= _plan->_count)
+    if (_count >= _plan->_count)
     {
-        std::cerr<<"scanb";
         fclose(_file);
-        std::cerr<<"scanc";
         delete [] _buffer;
-        std::cerr<<"scand";
         return false;
     }
-    std::cerr<<"scane";
-	createNextRecord();
-    std::cerr<<"scanf";
-	++ _count;
+    createNextRecord();
+    ++ _count;
 	return true;
 } // ScanIterator::next
 
 void ScanIterator::createNextRecord()
 {
-    std::cerr<<"\ncreateA";
     if (_count > 0) this->_currentRecord.~Record();
-    std::cerr<<"createB";
-	new (&this->_currentRecord) Record(generateNewRecordData(),0);
-    std::cerr<<"createc";
-	this->_currentRecord.storeRecord(_file,(_count == _plan->_count - 1));
-    std::cerr<<"created";
-} // ScanIterator::createNextRecord 
+    new (&this->_currentRecord) Record(generateNewRecordData(),0);
+    this->_currentRecord.storeRecord(_file,(_count == _plan->_count - 1));
+} // ScanIterator::createNextRecord
 
 
 char * ScanIterator::generateNewRecordData ()

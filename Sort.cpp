@@ -39,7 +39,6 @@ SortIterator::SortIterator (SortPlan const * const plan):
         // Get the next record from the input
         Record nextRecord = _input->_currentRecord;
         _consumed++;
-        std::cerr << "val"<<_consumed;
         // If we're gracefully degrading, just call subroutine to do that
         if (_gracefulDegrade)
         {
@@ -51,7 +50,6 @@ SortIterator::SortIterator (SortPlan const * const plan):
             addToCacheRuns(nextRecord);
             //
         }
-        std::cerr << "o";
     }
     if (_ssdCount>0) fclose(tmpOutputFile);
     if (_firstPass)
@@ -80,9 +78,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
 
 SortIterator::~SortIterator ()
 {
-
-    std::cerr<<"Here3";
-	TRACE (true);
+    TRACE (true);
     fclose(_outputFile);
     delete [] _outputBuffer;
 	delete _input;
@@ -93,7 +89,6 @@ SortIterator::~SortIterator ()
 
 bool SortIterator::next()
 {
-    std::cerr<<"Here2";
     if (_produced >= _consumed)
      {
         char * lf = new char[1]{'~'};
@@ -104,7 +99,7 @@ bool SortIterator::next()
     char * lf = new char[1]{'~'};
     if (_produced > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(lf,0);
-    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile);
+    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile,true);
     //this->_currentRecord.storeRecord(_outputFile,(_produced == _consumed - 1));
 	++ _produced;
 	return true;
@@ -113,9 +108,7 @@ bool SortIterator::next()
 
 void SortIterator::moveToNextCache()
 {
-    std::cerr << "m";
     _streamIndex = 0; // Start adding from the beginning
-
     // If we're at the second to last cache, we need to start graceful degradation
     if ((_lastCache == 0 && _cacheIndex == 1) || (_lastCache == 94 && _cacheIndex == 93))
     {
@@ -142,15 +135,12 @@ void SortIterator::moveToNextCache()
 
 void SortIterator::addToCacheRuns(Record& nextRecord)
 {
-    std::cerr << "HERE" << _consumed <<"\n";
     _cacheRuns[_cacheIndex].add(nextRecord, _streamIndex++);
-    std::cerr << "j";
+
     if (_cacheRuns[_cacheIndex].isFull())
     {
-        std::cerr << "k";
         if (_gracefulDegrade)
         {
-            std::cerr << "l";
             // If we're here, we filled the cache during the graceful degradation
             // We must clear the cache and stop graceful degradation
             _cacheRunPQ.storeRecords(tmpOutputFile,_lastCache);;
@@ -158,7 +148,6 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
         }
         moveToNextCache();
     }
-    std::cerr << "n";
 }
 
 void SortIterator::gracefulDegrade(Record& nextRecord)

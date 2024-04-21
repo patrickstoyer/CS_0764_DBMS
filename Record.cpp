@@ -28,7 +28,8 @@ bool Record::sortsBefore(Record& other) const
 }
 int Record::compare(Record& other) const
 {
-    return strncmp(this->data,other.data,KEY_SIZE);
+    int cmp = strncmp(this->data,other.data,KEY_SIZE);
+    return cmp;
 }
 bool Record::isDuplicate(Record& other) const
 {

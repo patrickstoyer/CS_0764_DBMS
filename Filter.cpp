@@ -61,37 +61,21 @@ FilterIterator::~FilterIterator ()
 
 bool FilterIterator::next ()
 {
-    std::cerr << "Nexta";
-	if ( ! _input->next ())
+    if ( ! _input->next ())
     {
-        std::cerr << "Nextb";
         char * lf = new char[1]{'~'};
-        std::cerr << "Nextc";
         this->_currentRecord.~Record();
-        std::cerr << "Nextd";
         new (&this->_currentRecord) Record(lf,0);
-        std::cerr << "Nexte";
         lf = new char[1]{'~'};
-        std::cerr << "Nextf";
         new (&this->_lastRecord) Record(lf,0);
-        std::cerr << "Nextg";
         return false;
     }
-    std::cerr << "Nexth";
-	new (&this->_currentRecord) Record(_input->_currentRecord);
-    std::cerr << "Nexti";
-	if (_consumed == 0) this->_lastRecord = this->_currentRecord;
+    new (&this->_currentRecord) Record(_input->_currentRecord);
+    if (_consumed == 0) this->_lastRecord = this->_currentRecord;
 
-    std::cerr << "Nextj";
-	updateParity(this->_currentRecord);
-
-    std::cerr << "Nextk";
+    updateParity(this->_currentRecord);
 	updateIsSorted(this->_currentRecord);
-	//std::cout << "HERE2";
-    std::cerr << "Nextl";
 	_lastRecord = this->_currentRecord;
-    std::cerr << "Nextm";
-	//std::cout << "HERE3";
 	++ _consumed;
 	++ _produced;
 	return true;

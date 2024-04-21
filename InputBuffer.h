@@ -13,6 +13,7 @@ public:
     Record * peek() override;
     void ready(int skipIndex) override;
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap) override;
 private:
 	FILE * _inputFile{};
     char * _inputBuffer{};

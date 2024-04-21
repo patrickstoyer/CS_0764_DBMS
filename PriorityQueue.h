@@ -8,6 +8,7 @@ public:
     ~PriorityQueue();
     void storeRecords(FILE * outputFile, int lastCache);
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile,bool alwaysSwap) override;
     Record * peek () override; // Returns arr[0] (the min value)
     void add(Record& nextRecord, int stream); // Adds a new node from _inputStreams[stream], assumes stream exists
     void add(int stream, InputStream& inputStream); // Adds a new node from inputStream, and sets _inputStreams[stream] = inputStream
