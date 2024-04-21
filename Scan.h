@@ -1,6 +1,6 @@
 #include "Iterator.h"
 #include "Record.h"
-#include <stdio.h>
+#include <cstdio>
 #include <random>
 
 class ScanPlan : public Plan
@@ -24,7 +24,7 @@ private:
 	ScanPlan const * const _plan;
 	RowCount _count;
 	void createNextRecord ();
-	Record * generateNewRecord ();
+	static char * generateNewRecordData ();
 	FILE* _file;
 	char * _buffer;
 	int _bufferIndex;

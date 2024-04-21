@@ -1,9 +1,7 @@
 #include "Record.h"
 #include "PriorityQueue.h"
 #include <string.h>
-#include <fstream>
 #include <stdio.h>
-#include <stdlib.h>
 
 Record::Record(char * data,
     int index) //: data(data), index(index)
@@ -20,15 +18,22 @@ Record::Record()
 
 Record::~Record ()
 {
-   delete [] data;
+    delete [] data;
 //	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record& other) const
 {
-    int cmp = strncmp(this->data,other.data,KEY_SIZE);
-    bool retVal = (cmp <= 0); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
-
+    return (compare(other)<=0);
+}
+int Record::compare(Record& other) const
+{
+    return strncmp(this->data,other.data,KEY_SIZE);
+}
+bool Record::isDuplicate(Record& other) const
+{
+    int cmp = strncmp(this->data, other.data, RECORD_SIZE);
+    bool retVal = (cmp == 0); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
     return retVal;
 }
 
@@ -52,7 +57,13 @@ void Record::exchange(Record &other)
     this->data = dataTmp;
     this->index = indexTmp;
 }
-
+void Record::copy(Record &other)
+{
+    int dataSize = ((strncmp(other.data,&LATE_FENCE,1)==0) || (strncmp(other.data,&EARLY_FENCE,1)==0)) ? 1 : RECORD_SIZE;
+    delete this->data;
+    this->data = new char[dataSize];
+    strncpy(this->data,other.data,dataSize);
+}
 Record::Record(Record &other)
 {
     this->data = new char [RECORD_SIZE];

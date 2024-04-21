@@ -4,13 +4,13 @@
 #include "Sort.h"
 #include "Record.h"
 #include <fstream>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 
 int RECORD_SIZE = 20; // Default to 20 bytes
 int KEY_SIZE = 8;
-int CACHE_SIZE = 1000;//000;
+int CACHE_SIZE = 400;//000;
 int SSD_PAGE_SIZE =  20000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB (= 20,000 B)
 int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
 int MEM_SIZE =   100000;//000; // Default to 100 MB (=  100,000,000 B)
@@ -21,53 +21,53 @@ int SEED = -1;
 
 void parseInput(int argc, char * argv [],int * count, int * size, char * outputFileName)
 {
-	char * nextval;
-	char valsSet = 0;
+	char * nextValue;
+	char valuesSet = 0;
 	for (int i = 1; i < argc; i++)
 	{
-		nextval = argv[i];
-		if (strcmp(nextval,"-c")==0)
+        nextValue = argv[i];
+		if (strcmp(nextValue,"-c")==0)
 		{
 			i++;
 			*count = (int) strtol(argv[i],NULL,10);
-			valsSet +=0b00000001;
+            valuesSet +=0b00000001;
 		} 
-		else if (strcmp(nextval,"-s")==0)
+		else if (strcmp(nextValue,"-s")==0)
 		{
 			i++;
-			valsSet +=0b00000010;
+            valuesSet +=0b00000010;
 			*size = (int) strtol(argv[i],NULL,10);
 		} 
-		else if (strcmp(nextval,"-seed")==0)
+		else if (strcmp(nextValue,"-seed")==0)
 		{
 			i++;
 			SEED = (int) strtol(argv[i],NULL,10);
 		} 
-		else if (strcmp(nextval,"-o")==0)
+		else if (strcmp(nextValue,"-o")==0)
 		{
 			i++;
-			valsSet +=0b00000100;
+            valuesSet +=0b00000100;
 			strcpy(outputFileName, argv[i]);	
 		} 
-		else if (strcmp(nextval,"-n")==0)
+		else if (strcmp(nextValue,"-n")==0)
 		{
 			USE_NEWLINES = true;
 		}
 		else
 		{
-			std::cout << "Unknown argument ignored: " << nextval << "\n";
+			std::cout << "Unknown argument ignored: " << nextValue << "\n";
 		}
 	}
 	// Set defaults
-	if ((valsSet & 0b00000001) == 0)
+	if ((valuesSet & 0b00000001) == 0)
 	{
 		*count = 20;
 	}
-	if ((valsSet & 0b00000010) == 0)
+	if ((valuesSet & 0b00000010) == 0)
 	{
 		*size = 1024;
 	}
-	if ((valsSet & 0b00000100) == 0)
+	if ((valuesSet & 0b00000100) == 0)
 	{
 		char arr[] = "outputFile.txt";
 		strcpy(outputFileName, arr);
@@ -77,7 +77,7 @@ void parseInput(int argc, char * argv [],int * count, int * size, char * outputF
 } // parseInput
 
 int main (int argc, char * argv [])
-{	
+{
 	char outputFileName[64];
 	int count,size;
 	parseInput(argc,argv,&count,&size,outputFileName);
@@ -109,13 +109,13 @@ int main (int argc, char * argv [])
 	// 2) Run the (Sort)Iterator. This will automatically:
 	//   -> Call SortIterator->next till done (Iterator->run)
 	// 
-	// (ACTUALLY, will have FilterPlan->init/FilterIterator->run, the former should be equivalent to caling SortPlan->init (i.e. sets up data/1st filter info), latter will call SortIterator->next)
+	// (ACTUALLY, will have FilterPlan->init/FilterIterator->run, the former should be equivalent to calling SortPlan->init (i.e. sets up data/1st filter info), latter will call SortIterator->next)
 	//
 	// At end of 1, I think we should have the records on stable storage ("HDD").
 	// SortIterator will then have to read from this file, before adding to sorting data structure(s)
 	// So ScanIterator->next should:
 	//  - Create record data
-	//  - Make sure currentRecord is publically accessible, for FilterIterator to compute parity/sortedness 
+	//  - Make sure currentRecord is publicly accessible, for FilterIterator to compute parity/sortedness
 	//  - Store data 
 	//		- Move to buffer
 	//  	- If buffer full (page size), write to file and clear

@@ -23,12 +23,10 @@ private:
 	SortPlan const * const _plan;
 	Iterator * const _input;
 	RowCount _consumed, _produced;
-    InputBuffer * _inputBuffer;
+    InputBuffer * _inputBuffer{};
     FILE* _outputFile;
     char * _outputBuffer;
-    FILE* _ssdOutputFile;
-    char * _ssdOutputBuffer;
-    int _bufferIndex;
+    int _bufferIndex{};
     PriorityQueue _cacheRuns[95];
     int _lastCache;
     PriorityQueue _cacheRunPQ;
@@ -51,4 +49,6 @@ private:
     long long int ssdSpaceRemaining() const;
     int _bytesWritten;
     bool _newGDFile;
+    FILE * tmpOutputFile;
+    char * tmpOutputBuffer;
 }; // class SortIterator

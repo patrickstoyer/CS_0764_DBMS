@@ -20,13 +20,17 @@ Iterator * SortPlan::init () const
 } // SortPlan::init
 
 SortIterator::SortIterator (SortPlan const * const plan):
-	_plan (plan), _input (plan->_input->init ()),_gracefulDegrade(false),_firstPass(true),
-	_consumed (0), _produced (0), _streamIndex(0),_cacheIndex(0),_numCaches(1),_lastCache(94)
+	_plan (plan), _input (plan->_input->init ()), _gracefulDegrade(false),
+    _firstPass(true),_consumed (0),_produced (0), _streamIndex(0),_cacheIndex(0),
+    _numCaches(1),_lastCache(94),_ssdCount(0),_hddCount(0),_newGDFile(false),_bytesWritten(0)
 {
     _outputFile = fopen("outputfile.txt", "w");
-    _outputBuffer = new char[SSD_PAGE_SIZE];
+    _outputBuffer = new char[HDD_PAGE_SIZE];
+    setvbuf(_outputFile,_outputBuffer,_IOFBF,HDD_PAGE_SIZE);
+
+
     _cacheRuns[_cacheIndex] = *(new PriorityQueue(CACHE_SIZE / RECORD_SIZE,0));
-    _cacheRunPQ = *(new PriorityQueue(5,1));
+    _cacheRunPQ = *(new PriorityQueue(95,1));
     _cacheRunPQ.add(_cacheIndex,_cacheRuns[_cacheIndex]);
 
     // Looping over _consumed inputs
@@ -35,6 +39,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
         // Get the next record from the input
         Record nextRecord = _input->_currentRecord;
         _consumed++;
+        std::cerr << "val"<<_consumed;
         // If we're gracefully degrading, just call subroutine to do that
         if (_gracefulDegrade)
         {
@@ -44,8 +49,11 @@ SortIterator::SortIterator (SortPlan const * const plan):
         {
             // Otherwise, just add to cache runs
             addToCacheRuns(nextRecord);
+            //
         }
+        std::cerr << "o";
     }
+    if (_ssdCount>0) fclose(tmpOutputFile);
     if (_firstPass)
     {
         _finalPQ = _cacheRunPQ;
@@ -53,7 +61,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
     }
     else
     {
-        _finalPQ = *(new PriorityQueue(_ssdCount + _hddCount,2));
+        _finalPQ = *(new PriorityQueue(_ssdCount + _hddCount + 1,2));
         _finalPQ.add(0,_cacheRunPQ);
         for (int i = 1; i <= _ssdCount; i++ )
         {
@@ -72,6 +80,8 @@ SortIterator::SortIterator (SortPlan const * const plan):
 
 SortIterator::~SortIterator ()
 {
+
+    std::cerr<<"Here3";
 	TRACE (true);
     fclose(_outputFile);
     delete [] _outputBuffer;
@@ -83,6 +93,7 @@ SortIterator::~SortIterator ()
 
 bool SortIterator::next()
 {
+    std::cerr<<"Here2";
     if (_produced >= _consumed)
      {
         char * lf = new char[1]{'~'};
@@ -102,8 +113,8 @@ bool SortIterator::next()
 
 void SortIterator::moveToNextCache()
 {
+    std::cerr << "m";
     _streamIndex = 0; // Start adding from the beginning
-    (_lastCache == 0) ? _cacheIndex-- : _cacheIndex++; // Increment if we're moving to the right, decrement otherwise
 
     // If we're at the second to last cache, we need to start graceful degradation
     if ((_lastCache == 0 && _cacheIndex == 1) || (_lastCache == 94 && _cacheIndex == 93))
@@ -119,8 +130,11 @@ void SortIterator::moveToNextCache()
     {
         _lastCache = 0;
     }
+    (_lastCache == 0) ? _cacheIndex-- : _cacheIndex++; // Increment if we're moving to the right, decrement otherwise
+
     // If on first pass through caches, add PQs
-    if (_firstPass) {
+    if (_firstPass)
+    {
         _cacheRuns[_cacheIndex] = *(new PriorityQueue(CACHE_SIZE / RECORD_SIZE, 0));
         _cacheRunPQ.add(_cacheIndex, _cacheRuns[_cacheIndex]);
     }
@@ -128,18 +142,23 @@ void SortIterator::moveToNextCache()
 
 void SortIterator::addToCacheRuns(Record& nextRecord)
 {
+    std::cerr << "HERE" << _consumed <<"\n";
     _cacheRuns[_cacheIndex].add(nextRecord, _streamIndex++);
+    std::cerr << "j";
     if (_cacheRuns[_cacheIndex].isFull())
     {
+        std::cerr << "k";
         if (_gracefulDegrade)
         {
+            std::cerr << "l";
             // If we're here, we filled the cache during the graceful degradation
             // We must clear the cache and stop graceful degradation
-            _cacheRunPQ.storeRecords(_outputFile,_lastCache);;
+            _cacheRunPQ.storeRecords(tmpOutputFile,_lastCache);;
             _gracefulDegrade = false;
         }
         moveToNextCache();
     }
+    std::cerr << "n";
 }
 
 void SortIterator::gracefulDegrade(Record& nextRecord)
@@ -148,25 +167,31 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
 
     long long ssdSpace = ssdSpaceRemaining();
     if (_newGDFile || ssdSpace < RECORD_SIZE) {
-        _newGDFile = true;
-        if (_ssdCount > 0) fclose(_outputFile);
+        _newGDFile = false;
+        if (_ssdCount > 0)
+        {
+            fclose(tmpOutputFile);
+            delete tmpOutputBuffer;
+        }
+        int bufferSize;
         if (ssdSpace > RECORD_SIZE) {
             _ssdCount++;
-            _outputFile = fopen(getOutputFilename(true, _ssdCount), "w");
+            bufferSize = SSD_PAGE_SIZE;
+            tmpOutputFile = fopen( getOutputFilename(true, _ssdCount), "w");
         } else {
             _hddCount++;
-            _outputFile = fopen(getOutputFilename(false, _hddCount), "w");
+            bufferSize = HDD_PAGE_SIZE;
+            tmpOutputFile = fopen(getOutputFilename(false, _hddCount), "w");
         }
+        tmpOutputBuffer = new char[bufferSize];
+        setvbuf(tmpOutputFile,tmpOutputBuffer,_IOFBF,bufferSize);
         _bytesWritten = 0;
     }
-    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,_outputFile)) // Returns true if successfully swapped in nextRecord
+    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,tmpOutputFile)) // Returns true if successfully swapped in nextRecord
     {
-        _cacheRuns[_cacheIndex].add(nextRecord,_cacheIndex++);
+        //_cacheRuns[_cacheIndex].add(nextRecord,_streamIndex++);
         addToCacheRuns(nextRecord);
-        if (_cacheRuns[_cacheIndex].isFull())
-        {
-            moveToNextCache();
-        }
+
     }
     _bytesWritten += RECORD_SIZE;
 }
@@ -174,7 +199,7 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
 long long SortIterator::ssdSpaceRemaining() const
 {
     if (_hddCount > 0 ) return 0;
-    struct stat buffer;
+    struct stat buffer{};
     long long retVal = SSD_SIZE;
     for (int i = 1 ; i <= _ssdCount ; i++)
     {
@@ -189,6 +214,6 @@ long long SortIterator::ssdSpaceRemaining() const
 
 char * SortIterator::getOutputFilename(bool _type, int _count)
 {
-    if (_type) return new char['s','s','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t'];
-    return new char['h','d','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t'];
+    if (_type) return new char[15]{'s','s','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t','\0'};
+    return new char[15]{'h','d','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t','\0'};
 }

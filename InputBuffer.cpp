@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-InputBuffer::InputBuffer() 
-{ 
-}
+InputBuffer::InputBuffer() = default;
 InputBuffer::InputBuffer(const char * filename, char bufferType) : _bufferIndexPtr(0),_type(bufferType)
 
 {
@@ -27,7 +25,7 @@ Record * InputBuffer::peek()
     char * data = new char [RECORD_SIZE];
     if (fread(data,1,RECORD_SIZE,_inputFile) != 0)
     {
-        fseek(_inputFile,-RECORD_SIZE,SEEK_CUR);
+        fseek(_inputFile,-RECORD_SIZE-1,SEEK_CUR);
         return new Record(data,0);
     }
     char * lf = new char[1]{'~'};

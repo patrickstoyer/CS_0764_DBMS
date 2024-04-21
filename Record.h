@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include "defs.h"
 
 class Record
@@ -13,9 +13,14 @@ public:
 	bool sortsBefore(Record& other) const; // Called to check sort order
     void storeRecord (FILE * file, bool flush) const;
     void exchange(Record& other);
+    void copy(Record& other);
     char * data;
     int index;
-private:
+
+    int compare(Record &other) const;
+
+    bool isDuplicate(Record &other) const;
+
 }; // class Record
 
 extern int RECORD_SIZE;

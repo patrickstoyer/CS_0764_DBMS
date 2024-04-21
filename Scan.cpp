@@ -45,27 +45,36 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
-    //TRACE (true);
-
+    std::cerr<<"scana";
 	if (_count >= _plan->_count)
     {
+        std::cerr<<"scanb";
         fclose(_file);
+        std::cerr<<"scanc";
         delete [] _buffer;
+        std::cerr<<"scand";
         return false;
     }
+    std::cerr<<"scane";
 	createNextRecord();
+    std::cerr<<"scanf";
 	++ _count;
 	return true;
 } // ScanIterator::next
 
 void ScanIterator::createNextRecord()
 {
-	this->_currentRecord = *generateNewRecord();
+    std::cerr<<"\ncreateA";
+    if (_count > 0) this->_currentRecord.~Record();
+    std::cerr<<"createB";
+	new (&this->_currentRecord) Record(generateNewRecordData(),0);
+    std::cerr<<"createc";
 	this->_currentRecord.storeRecord(_file,(_count == _plan->_count - 1));
+    std::cerr<<"created";
 } // ScanIterator::createNextRecord 
 
 
-Record * ScanIterator::generateNewRecord ()
+char * ScanIterator::generateNewRecordData ()
 {
 	static const char range[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	char * data = new char[RECORD_SIZE];
@@ -79,5 +88,5 @@ Record * ScanIterator::generateNewRecord ()
 	}
 	// Add newline
 	if (USE_NEWLINES) data[max] = '\n';
-	return new Record(data,0);// Index doesn't matter for this, just use 0
+	return data;// Index doesn't matter for this, just use 0
 } // ScanIterator::generateNewRecord 
