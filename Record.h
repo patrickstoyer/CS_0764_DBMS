@@ -15,7 +15,7 @@ public:
     void exchange(Record& other);
     void copy(Record& other);
     char * data;
-    int index;
+    int index{};
 
     int compare(Record &other) const;
 
