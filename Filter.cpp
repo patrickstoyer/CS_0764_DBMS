@@ -20,10 +20,10 @@ void FilterIterator::updateParity(Record& record)
 	for (int i = 0; i < RECORD_SIZE; i ++)
 	{
 		value = record.data[i];
-		parity = parity ^ value;
+		parity = (char)(parity ^ value);
 	}
 	
-	_xorParity = _xorParity ^ parity;
+	_xorParity = (char)(_xorParity ^ parity);
 	
 } // FilterPlan::calcParity 
 
@@ -52,10 +52,10 @@ FilterIterator::~FilterIterator ()
 	TRACE (true);
 	delete _input;
 
-	traceprintf ("produced %lu of %lu rows\nInput was %ssorted, and parity was %d\n",
+	traceprintf ("produced %lu of %lu rows\nInput was%s sorted, and parity was %d\n",
 			(unsigned long) (_produced),
 			(unsigned long) (_consumed),
-			(_isSorted ? "" : "not " ),
+			(_isSorted ? "" : " not" ),
 			(_xorParity));
 } // FilterIterator::~FilterIterator
 
@@ -67,15 +67,18 @@ bool FilterIterator::next ()
         this->_currentRecord.~Record();
         new (&this->_currentRecord) Record(lf,0);
         lf = new char[1]{'~'};
+        this->_lastRecord.~Record();
         new (&this->_lastRecord) Record(lf,0);
         return false;
     }
+    if (_consumed > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(_input->_currentRecord);
     if (_consumed == 0) this->_lastRecord = this->_currentRecord;
 
     updateParity(this->_currentRecord);
 	updateIsSorted(this->_currentRecord);
-	_lastRecord = this->_currentRecord;
+    if (_consumed > 0) this->_lastRecord.~Record();
+	new (&_lastRecord) Record(this->_currentRecord);
 	++ _consumed;
 	++ _produced;
 	return true;

@@ -1,24 +1,15 @@
 #include "Iterator.h"
 
-Plan::Plan ()
-{
-    //TRACE (true);
-} // Plan::Plan
+Plan::Plan () = default; // Plan::Plan
 
-Plan::~Plan ()
-{
-    //TRACE (true);
-} // Plan::~Plan
+Plan::~Plan () = default; // Plan::~Plan
 
 Iterator::Iterator () : _count (0)
 {
 //	TRACE (true);
 } // Iterator::Iterator
 
-Iterator::~Iterator ()
-{
-    //TRACE (true);
-} // Iterator::~Iterator
+Iterator::~Iterator () = default; // Iterator::~Iterator
 
 void Iterator::run ()
 {

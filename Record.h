@@ -28,7 +28,7 @@ extern int KEY_SIZE;
 extern int CACHE_SIZE;
 extern int SSD_PAGE_SIZE;
 extern int HDD_PAGE_SIZE;
-extern int MEM_SIZE;
+[[maybe_unused]] extern int MEM_SIZE;
 extern long long SSD_SIZE;
 extern bool USE_NEWLINES;
 extern bool REMOVE_DUPES;

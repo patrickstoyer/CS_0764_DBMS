@@ -1,6 +1,6 @@
 #include "Iterator.h"
 #include "Record.h"
-#include <stdio.h>
+#include <cstdio>
 
 class FilterPlan : public Plan
 {

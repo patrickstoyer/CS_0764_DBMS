@@ -12,7 +12,7 @@ PriorityQueue::PriorityQueue(int capacity, int type) : _capacity(capacity), _typ
 {
     initializePQ();
 }
-bool PriorityQueue::isFull()
+bool PriorityQueue::isFull() const
 {
     return (_capacity == _size);
 }
@@ -28,24 +28,41 @@ void PriorityQueue::initializePQ()
     {
         _inputStreams = new InputStream * [_capacity]; // _capacity should be ~95
     }
-    reset();
+    reset(true);
 }
-
 void PriorityQueue::reset()
 {
-    reset(0,1);
+    reset(0,1,false,false);
 }
-void PriorityQueue::reset(int size,int dirMult)
+void PriorityQueue::reset(bool initializing)
 {
+    reset(0,1,false,initializing);
+}
+void PriorityQueue::reset(int size,int dirMult, bool resetStreams,bool initializing)
+{
+    _size = size;
+    _dir *= dirMult;
     for (int i = 0 ; i < _capacity; i++)
     {
         char * ef = new char[1]{'!'};
         // Initialize with early fence
-        _arr[i]=*(new Record{ef,i});
+        if (!initializing)
+        {
+            _arr[i].~Record();
+        }
+        new (&_arr[i]) Record{ef,i};
 
+        if ((!resetStreams)||(_type != 1)) continue;
+
+        if (_dir == 1)
+        {
+            if (i >= _size) _inputStreams[i]->reset();
+        }
+        else
+        {
+            if (i < _capacity - _size) _inputStreams[i]->reset();
+        }
     }
-    _size = size;
-    _dir *= dirMult;
     _isReadyToNext = false;
 }
 void PriorityQueue::add(Record& nextRecord, int stream)
@@ -55,10 +72,11 @@ void PriorityQueue::add(Record& nextRecord, int stream)
     {
         if ((strncmp(nextRecord.data,&LATE_FENCE,1) != 0)&&(strncmp(nextRecord.data,&EARLY_FENCE,1)!=0))
         {
-            _size ++;
+            if (_size < _capacity) _size ++;
         }
         else
         {
+            if (_size > 0) _size --;
             checkDupes=false;
         }
     }
@@ -87,7 +105,7 @@ void PriorityQueue::add(Record& nextRecord, int stream)
 
 void PriorityQueue::add(int stream, InputStream& inputStream)
 {
-    _size++;
+    this->incrementSize();
     _inputStreams[stream] = &inputStream;
 }
 
@@ -95,9 +113,9 @@ void PriorityQueue::addFromStream(int stream)
 {
     if ((_dir == 1) && (stream >= _size)) return;
     if ((_dir == -1) && (stream < _capacity - _size)) return;
-    Record val{};
-    val.copy(*_inputStreams[stream]->peek());
-    add(val,stream);
+    Record * val = _inputStreams[stream]->peek(true);
+    add(*val,stream);
+    delete val;
 }
 void PriorityQueue::remove(int stream)
 {
@@ -110,9 +128,17 @@ int PriorityQueue::parent(int index)
     return  (index / 2);
 }
 
-Record * PriorityQueue::peek ()
+Record * PriorityQueue::peek()
 {
-    return &_arr[MIN_NODE];
+    //Doesn't require delete on return val (returns pointer to value in array)
+    return peek(false);
+}
+
+Record * PriorityQueue::peek(bool copy)
+{
+    //Requires delete if copy is true
+    if (!copy) return &_arr[MIN_NODE];
+    return new Record(_arr[MIN_NODE]);
 }
 
 Record * PriorityQueue::next()
@@ -132,7 +158,6 @@ Record * PriorityQueue::next()
     {
         reset();
     }
-    _lastReturnedIndex = retVal->index;
     return retVal;
 }
 
@@ -151,29 +176,29 @@ Record * PriorityQueue::nextAndReplace ()
     } else
     {
         delete _inputStreams[index]->next();
-        retVal = _inputStreams[index]->next();
+        retVal = _inputStreams[index]->peek(true);
     }
     replacePeek(*retVal);
     if (strncmp(retVal->data,&EARLY_FENCE,1) == 0)
     {
+        delete retVal;
         retVal = nextAndReplace();
     }
     if (strncmp(retVal->data,&LATE_FENCE,1)==0)
     {
         reset();
     }
-    _lastReturnedIndex = retVal->index;
     return retVal;
 }
 bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
 {
-    return storeNextAndSwap(record,outputFile,false);
+    return storeNextAndSwap(record,outputFile,false,-1);
 }
-bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool alwaysSwap)
+bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool alwaysSwap, int lastCache)
 {
     if (!_isReadyToNext)
     {
-        ready(-1);
+        ready(lastCache);
     }
     if (_type == 0)
     {
@@ -181,14 +206,14 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool al
         // If record is less than the min we just saved, we can't add it
         if (!record.sortsBefore(*peek())||alwaysSwap)
         {
-            //Doesn't sort before or we always want to swap so replace peek
+            //Doesn't sort before, or we always want to swap so replace peek
             replacePeek(record);
             return true;
         }
         else
         {
             // Otherwise, call next to remove min, and return false
-            next();
+            delete next();
             return false;
         }
     }
@@ -201,8 +226,11 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool al
         //    - Storing the min (note that if somehow the min w/in the _inputStreams differs from the overall PQ, this will fail)
         //    - Comparing the stored min with the new record (to see if we can swap it into the cache)
         //    - Swapping into the cache
-        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile,alwaysSwap);
-        replacePeek(*_inputStreams[index]->peek(),false); // We will always want the peek of the stream to be in the array
+        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile,alwaysSwap,-1);
+        Record * nextRec = _inputStreams[index]->peek();
+
+        replacePeek(*nextRec, false); // We will always want the peek of the stream to be in the array
+        if ((_type==2)&&(index>0)) delete nextRec;
         return retVal;
     }
 }
@@ -233,15 +261,15 @@ void PriorityQueue::storeRecords(FILE * outputFile, int lastCache)
     Record lateFence(lf,0);
 
     if (!_isReadyToNext) ready(lastCache);
-
-    for (Record * currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
+    Record * currentRec;
+    for (currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
     {
         if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
         currentRec->storeRecord(outputFile,false);
         delete currentRec;
     }
-
-    reset(1,-1);
+    delete currentRec;
+    reset(1,-1, true,false);
 }
 
 void PriorityQueue::ready(int skipIndex)
@@ -257,7 +285,10 @@ void PriorityQueue::ready(int skipIndex)
         }
         for (int i = min; i < max; i++)
         {
-            if (i == skipIndex) continue;
+            if (i == skipIndex) {
+                remove(i);
+                continue;
+            }
             _inputStreams[i]->ready(-1);
             addFromStream(i);
         }
@@ -281,5 +312,8 @@ void PriorityQueue::repair()
     {
         remove(i);
     }
+}
+void PriorityQueue::incrementSize() {
+    _size++;
 }
 

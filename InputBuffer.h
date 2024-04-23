@@ -1,7 +1,7 @@
 #include "Iterator.h"
 #include "Record.h"
 #include "InputStream.h"
-#include <stdio.h>
+#include <cstdio>
 
 class InputBuffer : public InputStream
 {
@@ -11,12 +11,13 @@ public:
 	~InputBuffer ();
     Record * next() override;
     Record * peek() override;
+    Record * peek(bool copy) override;
     void ready(int skipIndex) override;
+    void reset() override;
+    void nullBuffer();
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
-    bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap, int lastCache) override;
 private:
 	FILE * _inputFile{};
     char * _inputBuffer{};
-    int _bufferIndexPtr{};
-    char _type{} ; // 1 = HDD / 2 = SSD
 }; // class InputBuffer

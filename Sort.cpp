@@ -1,6 +1,5 @@
 #include "Sort.h"
 #include <sys/stat.h>
-#include <sys/types.h>
 
 SortPlan::SortPlan (Plan * const input) : _input (input)
 {
@@ -28,9 +27,8 @@ SortIterator::SortIterator (SortPlan const * const plan):
     _outputBuffer = new char[HDD_PAGE_SIZE];
     setvbuf(_outputFile,_outputBuffer,_IOFBF,HDD_PAGE_SIZE);
 
-
-    _cacheRuns[_cacheIndex] = *(new PriorityQueue(CACHE_SIZE / RECORD_SIZE,0));
-    _cacheRunPQ = *(new PriorityQueue(95,1));
+    new (&_cacheRuns[_cacheIndex]) PriorityQueue(CACHE_SIZE / RECORD_SIZE,0);
+    new (&_cacheRunPQ) PriorityQueue(95,1);
     _cacheRunPQ.add(_cacheIndex,_cacheRuns[_cacheIndex]);
 
     // Looping over _consumed inputs
@@ -51,7 +49,11 @@ SortIterator::SortIterator (SortPlan const * const plan):
             //
         }
     }
-    if (_ssdCount>0) fclose(tmpOutputFile);
+    if (_ssdCount>0)
+    {
+        fclose(tmpOutputFile);
+        delete [] tmpOutputBuffer;
+    }
     if (_firstPass)
     {
         _finalPQ = _cacheRunPQ;
@@ -59,15 +61,22 @@ SortIterator::SortIterator (SortPlan const * const plan):
     }
     else
     {
-        _finalPQ = *(new PriorityQueue(_ssdCount + _hddCount + 1,2));
+        new (&_finalPQ) PriorityQueue(_ssdCount + _hddCount + 1,2);
         _finalPQ.add(0,_cacheRunPQ);
+        _inputBuffers = new InputBuffer[_ssdCount + _hddCount];
         for (int i = 1; i <= _ssdCount; i++ )
         {
-            _finalPQ.add(i , *(new InputBuffer( getOutputFilename(true , i) , 2)));
+            char * filename = getOutputFilename(true , i);
+            new (&_inputBuffers[i-1]) InputBuffer(filename, 2);
+            _finalPQ.add(i,_inputBuffers[i-1]);
+            delete [] filename;
         }
         for (int i = 1; i <= _hddCount; i++ )
         {
-            _finalPQ.add(i + _ssdCount , *(new InputBuffer(getOutputFilename(false, i) , 1 )));
+            char * filename = getOutputFilename(false, i);
+            new (&_inputBuffers[i + _ssdCount - 1]) InputBuffer(filename, 1);
+            _finalPQ.add(i + _ssdCount, _inputBuffers[i + _ssdCount -1 ]);
+            delete [] filename;
         }
     }
 
@@ -82,6 +91,7 @@ SortIterator::~SortIterator ()
     fclose(_outputFile);
     delete [] _outputBuffer;
 	delete _input;
+    delete [] _inputBuffers;
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
 			(unsigned long) (_consumed));
@@ -99,9 +109,8 @@ bool SortIterator::next()
     char * lf = new char[1]{'~'};
     if (_produced > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(lf,0);
-    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile,true);
-    //this->_currentRecord.storeRecord(_outputFile,(_produced == _consumed - 1));
-	++ _produced;
+    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile,true,-1);
+    ++ _produced;
 	return true;
 } // SortIterator::next
 
@@ -128,8 +137,12 @@ void SortIterator::moveToNextCache()
     // If on first pass through caches, add PQs
     if (_firstPass)
     {
-        _cacheRuns[_cacheIndex] = *(new PriorityQueue(CACHE_SIZE / RECORD_SIZE, 0));
+        new (&_cacheRuns[_cacheIndex]) PriorityQueue(CACHE_SIZE / RECORD_SIZE, 0);
         _cacheRunPQ.add(_cacheIndex, _cacheRuns[_cacheIndex]);
+    }
+    else {
+        _cacheRuns[_cacheIndex].reset();
+        _cacheRunPQ.incrementSize();
     }
 }
 
@@ -143,7 +156,7 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
         {
             // If we're here, we filled the cache during the graceful degradation
             // We must clear the cache and stop graceful degradation
-            _cacheRunPQ.storeRecords(tmpOutputFile,_lastCache);;
+            _cacheRunPQ.storeRecords(tmpOutputFile,_lastCache);
             _gracefulDegrade = false;
         }
         moveToNextCache();
@@ -160,23 +173,26 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
         if (_ssdCount > 0)
         {
             fclose(tmpOutputFile);
-            delete tmpOutputBuffer;
+            delete [] tmpOutputBuffer;
         }
         int bufferSize;
+        char * filename;
         if (ssdSpace > RECORD_SIZE) {
             _ssdCount++;
             bufferSize = SSD_PAGE_SIZE;
-            tmpOutputFile = fopen( getOutputFilename(true, _ssdCount), "w");
+            filename = getOutputFilename(true, _ssdCount);
         } else {
             _hddCount++;
             bufferSize = HDD_PAGE_SIZE;
-            tmpOutputFile = fopen(getOutputFilename(false, _hddCount), "w");
+            filename = getOutputFilename(false, _hddCount);
         }
+        tmpOutputFile = fopen(filename, "w");
+        delete [] filename;
         tmpOutputBuffer = new char[bufferSize];
         setvbuf(tmpOutputFile,tmpOutputBuffer,_IOFBF,bufferSize);
         _bytesWritten = 0;
     }
-    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,tmpOutputFile)) // Returns true if successfully swapped in nextRecord
+    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,tmpOutputFile,false,_lastCache)) // Returns true if successfully swapped in nextRecord
     {
         //_cacheRuns[_cacheIndex].add(nextRecord,_streamIndex++);
         addToCacheRuns(nextRecord);
@@ -192,10 +208,12 @@ long long SortIterator::ssdSpaceRemaining() const
     long long retVal = SSD_SIZE;
     for (int i = 1 ; i <= _ssdCount ; i++)
     {
-        if (stat (getOutputFilename(true,i),&buffer) == 0)
+        char * filename = getOutputFilename(true,i);
+        if (stat (filename,&buffer) == 0)
         {
             retVal -= buffer.st_size;
         }
+        delete [] filename;
         if (retVal <= 0) return retVal;
     }
     return retVal;
@@ -203,6 +221,6 @@ long long SortIterator::ssdSpaceRemaining() const
 
 char * SortIterator::getOutputFilename(bool _type, int _count)
 {
-    if (_type) return new char[15]{'s','s','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t','\0'};
-    return new char[15]{'h','d','d','o','u','t','p','u','t',( '0' + _count),'.','t','x','t','\0'};
+    if (_type) return new char[15]{'s','s','d','o','u','t','p','u','t',(char)( '0' + _count),'.','t','x','t','\0'};
+    return new char[15]{'h','d','d','o','u','t','p','u','t',(char)( '0' + _count),'.','t','x','t','\0'};
 }

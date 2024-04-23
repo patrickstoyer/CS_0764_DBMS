@@ -23,16 +23,12 @@ private:
 	SortPlan const * const _plan;
 	Iterator * const _input;
 	RowCount _consumed, _produced;
-    InputBuffer * _inputBuffer{};
     FILE* _outputFile;
     char * _outputBuffer;
-    int _bufferIndex{};
     PriorityQueue _cacheRuns[95];
     int _lastCache;
     PriorityQueue _cacheRunPQ;
     PriorityQueue _finalPQ;
-    //PriorityQueue _memRuns; //_memRuns[0]~_cacheRuns, _memRuns[1-N] = ~mem-size runs on SSD
-    //PriorityQueue _ssdRuns;
     int _streamIndex;
     int _cacheIndex;
     int _numCaches;
@@ -49,6 +45,7 @@ private:
     long long int ssdSpaceRemaining() const;
     int _bytesWritten;
     bool _newGDFile;
+    InputBuffer * _inputBuffers;
     FILE * tmpOutputFile{};
     char * tmpOutputBuffer{};
 }; // class SortIterator
