@@ -42,7 +42,7 @@ private:
     void moveToNextCache();
     void addToCacheRuns(Record &nextRecord);
     static char *getOutputFilename(bool _type, int _count);
-    long long int ssdSpaceRemaining() const;
+    static bool hasSsdSpaceRemaining() ;
     int _bytesWritten;
     bool _newGDFile;
     InputBuffer * _inputBuffers;

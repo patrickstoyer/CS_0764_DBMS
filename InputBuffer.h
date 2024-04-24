@@ -20,4 +20,9 @@ public:
 private:
 	FILE * _inputFile{};
     char * _inputBuffer{};
+    long long _fileSize;
+    long long _lastRead;
+    long long _pageSize;
+
+    void trackBuffer();
 }; // class InputBuffer

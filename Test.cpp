@@ -15,9 +15,15 @@ int SSD_PAGE_SIZE =  20000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB
 int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
 [[maybe_unused]] int MEM_SIZE =   100000;//000; // Default to 100 MB (=  100,000,000 B)
 long long SSD_SIZE = 10000000;//000; // Default to 10GB (= 10,000,000,000 B)
+long long BYTES_WRITTEN_SSD = 0;
+long long BYTES_WRITTEN_HDD = 0;
+long long BYTES_WRITTEN_COUNTER = 0;
+double TOTAL_LATENCY = 0;
 bool USE_NEWLINES = false;
 bool REMOVE_DUPES = true;
+char DUPLICATE_PARITY = 0;
 int SEED = -1;
+bool ALWAYS_HDD = true;
 
 void parseInput(int argc, char * argv [],int * count, int * size, char * outputFileName)
 {

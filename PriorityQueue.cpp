@@ -92,7 +92,15 @@ void PriorityQueue::add(Record& nextRecord, int stream)
         // std::cerr << "e";
         int cmp=candidate.compare(_arr[index]);
         if (cmp < 0) continue; // cmp > 0 => candidate sorts before PQ value
-        if ((cmp == 0) && checkDupes && candidate.isDuplicate(_arr[index])) return; // cmp == 0 is a duplicate
+        if ((cmp == 0) && checkDupes && candidate.isDuplicate(_arr[index]))
+        {
+            // Update duplicate parity
+            for (int i = 0; i < RECORD_SIZE; i ++)
+            {
+                DUPLICATE_PARITY = (char)(DUPLICATE_PARITY ^ candidate.data[i]);
+            }
+            return; // cmp == 0 is a duplicate
+        }
         // Otherwise we can swap
         candidate.exchange(_arr[index]);
 

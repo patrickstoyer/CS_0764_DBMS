@@ -30,6 +30,8 @@ ScanIterator::ScanIterator (ScanPlan const * const plan) :
 	_buffer = new char[HDD_PAGE_SIZE];
     setvbuf(_file,_buffer,_IOFBF,HDD_PAGE_SIZE);
 	if (SEED > 0) generator.seed(SEED);
+
+    traceprintf("generating %lld records of size %d\n",_plan->_count,RECORD_SIZE);
 	
 } // ScanIterator::ScanIterator
 

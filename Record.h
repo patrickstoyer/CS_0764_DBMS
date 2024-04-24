@@ -21,6 +21,7 @@ public:
 
     bool isDuplicate(Record &other) const;
 
+    static void trackBuffer(bool flush);
 }; // class Record
 
 extern int RECORD_SIZE;
@@ -33,3 +34,9 @@ extern long long SSD_SIZE;
 extern bool USE_NEWLINES;
 extern bool REMOVE_DUPES;
 extern int SEED;
+extern double TOTAL_LATENCY;
+extern long long BYTES_WRITTEN_SSD;
+extern long long BYTES_WRITTEN_HDD;
+extern long long BYTES_WRITTEN_COUNTER;
+extern bool ALWAYS_HDD;
+extern char DUPLICATE_PARITY;

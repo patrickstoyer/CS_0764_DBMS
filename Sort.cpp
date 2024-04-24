@@ -23,6 +23,8 @@ SortIterator::SortIterator (SortPlan const * const plan):
     _firstPass(true),_consumed (0),_produced (0), _streamIndex(0),_cacheIndex(0),
     _numCaches(1),_lastCache(94),_ssdCount(0),_hddCount(0),_newGDFile(false),_bytesWritten(0)
 {
+    traceprintf("sorting records\n");
+    ALWAYS_HDD = false;
     _outputFile = fopen("outputfile.txt", "w");
     _outputBuffer = new char[HDD_PAGE_SIZE];
     setvbuf(_outputFile,_outputBuffer,_IOFBF,HDD_PAGE_SIZE);
@@ -79,8 +81,11 @@ SortIterator::SortIterator (SortPlan const * const plan):
             delete [] filename;
         }
     }
+    ALWAYS_HDD = true;
+    BYTES_WRITTEN_HDD = 0;
+    BYTES_WRITTEN_COUNTER = 0;
 
-    // Final merge will happen in
+    // Final merge will happen when calling next
     traceprintf("consumed %lu rows\n",
                 (unsigned long) (_consumed));
 } // SortIterator::SortIterator
@@ -123,6 +128,7 @@ void SortIterator::moveToNextCache()
     {
         _gracefulDegrade = true;
         _newGDFile = true;
+        traceprintf("starting graceful degradation\n");
     }
     else if (_cacheIndex == 0)
     {
@@ -167,21 +173,30 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
 {
     if (_firstPass) _firstPass = false;
 
-    long long ssdSpace = ssdSpaceRemaining();
-    if (_newGDFile || ssdSpace < RECORD_SIZE) {
+    if (_newGDFile || !hasSsdSpaceRemaining()) {
         _newGDFile = false;
         if (_ssdCount > 0)
         {
             fclose(tmpOutputFile);
             delete [] tmpOutputBuffer;
+            if (BYTES_WRITTEN_COUNTER > 0)
+            {
+                double latency = (_hddCount > 0) ? 5 : 0.1;
+                TOTAL_LATENCY += latency;
+                traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
+                BYTES_WRITTEN_COUNTER = 0;
+            }
         }
         int bufferSize;
         char * filename;
-        if (ssdSpace > RECORD_SIZE) {
+
+        if (hasSsdSpaceRemaining()) {
+            traceprintf("spilling to SSD\n");
             _ssdCount++;
-            bufferSize = SSD_PAGE_SIZE;
+            bufferSize = (BYTES_WRITTEN_SSD + SSD_PAGE_SIZE > SSD_SIZE) ? (int)(SSD_SIZE - BYTES_WRITTEN_SSD) : SSD_PAGE_SIZE;
             filename = getOutputFilename(true, _ssdCount);
         } else {
+            traceprintf("spilling to HDD\n");
             _hddCount++;
             bufferSize = HDD_PAGE_SIZE;
             filename = getOutputFilename(false, _hddCount);
@@ -201,26 +216,13 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
     _bytesWritten += RECORD_SIZE;
 }
 
-long long SortIterator::ssdSpaceRemaining() const
+bool SortIterator::hasSsdSpaceRemaining()
 {
-    if (_hddCount > 0 ) return 0;
-    struct stat buffer{};
-    long long retVal = SSD_SIZE;
-    for (int i = 1 ; i <= _ssdCount ; i++)
-    {
-        char * filename = getOutputFilename(true,i);
-        if (stat (filename,&buffer) == 0)
-        {
-            retVal -= buffer.st_size;
-        }
-        delete [] filename;
-        if (retVal <= 0) return retVal;
-    }
-    return retVal;
+    return (BYTES_WRITTEN_SSD + RECORD_SIZE < SSD_SIZE);
 }
 
 char * SortIterator::getOutputFilename(bool _type, int _count)
 {
-    if (_type) return new char[15]{'s','s','d','o','u','t','p','u','t',(char)( '0' + _count),'.','t','x','t','\0'};
-    return new char[15]{'h','d','d','o','u','t','p','u','t',(char)( '0' + _count),'.','t','x','t','\0'};
+    if (_type) return new char[17]{'s','s','d','o','u','t','p','u','t',(char)( '0' + _count/100),(char)( '0' + (_count/10)%10),(char)( '0' + _count % 10),'.','t','x','t','\0'};
+    return new char[17]{'h','d','d','o','u','t','p','u','t',(char)( '0' + _count/100),(char)( '0' + (_count/10)%10),(char)( '0' + _count % 10),'.','t','x','t','\0'};
 }
