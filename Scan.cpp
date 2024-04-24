@@ -45,6 +45,7 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
+    ALWAYS_HDD = true;
     if (_count >= _plan->_count)
     {
         fclose(_file);

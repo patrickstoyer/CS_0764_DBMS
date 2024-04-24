@@ -17,6 +17,6 @@ void Iterator::run ()
 
 	while (next ())  ++ _count;
 
-	traceprintf ("entire plan produced %lu rows\n",
-			(unsigned long) _count);
+	traceprintf ("entire plan produced %lu rows.\nTotal bytes read: %lld, total bytes written: %lld, total latency: %.2f\n",
+			(unsigned long) _count,TOTAL_READ,TOTAL_WRITTEN,TOTAL_LATENCY);
 } // Iterator::run

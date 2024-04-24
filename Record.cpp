@@ -66,6 +66,7 @@ void Record::trackBuffer (bool flush)
     {
         BYTES_WRITTEN_HDD += RECORD_SIZE;
     }
+    TOTAL_WRITTEN += RECORD_SIZE;
     BYTES_WRITTEN_COUNTER += RECORD_SIZE;
     long long pageSize = (isSsd)? SSD_PAGE_SIZE : HDD_PAGE_SIZE;
     if (flush || (BYTES_WRITTEN_COUNTER >= pageSize))

@@ -52,7 +52,7 @@ FilterIterator::~FilterIterator ()
 	TRACE (true);
 	delete _input;
 
-	traceprintf ("produced %lu of %lu rows. Input was%s sorted, and parity was %d\n",
+	traceprintf ("produced %lu of %lu rows.\nInput was%s sorted, and parity was %d\n",
 			(unsigned long) (_produced),
 			(unsigned long) (_consumed),
 			(_isSorted ? "" : " not" ),

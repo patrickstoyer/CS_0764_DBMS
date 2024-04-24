@@ -87,6 +87,7 @@ void InputBuffer::trackBuffer()
         long long bytesRead = (_lastRead + _pageSize > _fileSize) ? _fileSize - _lastRead : _pageSize;
         _lastRead += bytesRead;
         double latency = (_pageSize == HDD_PAGE_SIZE) ? 5 : 0.1;
+        TOTAL_READ += bytesRead;
         TOTAL_LATENCY += latency;
         traceprintf("%s read of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_pageSize == HDD_PAGE_SIZE) ? "HDD" : "SSD",bytesRead,latency,TOTAL_LATENCY);
     }

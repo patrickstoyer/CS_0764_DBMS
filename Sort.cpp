@@ -24,7 +24,6 @@ SortIterator::SortIterator (SortPlan const * const plan):
     _numCaches(1),_lastCache(94),_ssdCount(0),_hddCount(0),_newGDFile(false),_bytesWritten(0)
 {
     traceprintf("sorting records\n");
-    ALWAYS_HDD = false;
     _outputFile = fopen("outputfile.txt", "w");
     _outputBuffer = new char[HDD_PAGE_SIZE];
     setvbuf(_outputFile,_outputBuffer,_IOFBF,HDD_PAGE_SIZE);
@@ -36,6 +35,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
     // Looping over _consumed inputs
     while (_input->next())
     {
+        ALWAYS_HDD = false;
         // Get the next record from the input
         Record nextRecord = _input->_currentRecord;
         _consumed++;
@@ -86,7 +86,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
     BYTES_WRITTEN_COUNTER = 0;
 
     // Final merge will happen when calling next
-    traceprintf("consumed %lu rows\n",
+    traceprintf("consumed %lu rows. Beginning final merge step.\n",
                 (unsigned long) (_consumed));
 } // SortIterator::SortIterator
 

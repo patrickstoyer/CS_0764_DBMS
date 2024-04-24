@@ -18,6 +18,8 @@ long long SSD_SIZE = 10000000;//000; // Default to 10GB (= 10,000,000,000 B)
 long long BYTES_WRITTEN_SSD = 0;
 long long BYTES_WRITTEN_HDD = 0;
 long long BYTES_WRITTEN_COUNTER = 0;
+long long TOTAL_READ = 0;
+long long TOTAL_WRITTEN = 0;
 double TOTAL_LATENCY = 0;
 bool USE_NEWLINES = false;
 bool REMOVE_DUPES = true;

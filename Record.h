@@ -34,6 +34,8 @@ extern long long SSD_SIZE;
 extern bool USE_NEWLINES;
 extern bool REMOVE_DUPES;
 extern int SEED;
+extern long long TOTAL_READ;
+extern long long TOTAL_WRITTEN;
 extern double TOTAL_LATENCY;
 extern long long BYTES_WRITTEN_SSD;
 extern long long BYTES_WRITTEN_HDD;
