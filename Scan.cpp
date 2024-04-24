@@ -3,6 +3,7 @@
 #include <chrono>
 #include <random>
 #include "Record.h"
+#include "InputBuffer.h"
 
 ScanPlan::ScanPlan (RowCount const count) : _count (count)
 {
@@ -25,14 +26,22 @@ std::default_random_engine ScanIterator::generator(std::chrono::system_clock::no
 ScanIterator::ScanIterator (ScanPlan const * const plan) :
 	_plan (plan), _count (0)
 {
-//	TRACE (true);
+
     _file = fopen("inputfile.txt", "w");
 	_buffer = new char[HDD_PAGE_SIZE];
     setvbuf(_file,_buffer,_IOFBF,HDD_PAGE_SIZE);
 	if (SEED > 0) generator.seed(SEED);
 
     traceprintf("generating %lld records of size %d\n",_plan->_count,RECORD_SIZE);
-	
+    ALWAYS_HDD = true;
+	for (int i = 0; i < _plan->_count; i++)
+    {
+        createNextRecord(i);
+    }
+    fclose(_file);
+    delete [] _buffer;
+    new (&_inputBuffer) InputBuffer("inputfile.txt",1);
+
 } // ScanIterator::ScanIterator
 
 ScanIterator::~ScanIterator ()
@@ -45,23 +54,22 @@ ScanIterator::~ScanIterator ()
 
 bool ScanIterator::next ()
 {
-    ALWAYS_HDD = true;
     if (_count >= _plan->_count)
     {
-        fclose(_file);
-        delete [] _buffer;
         return false;
     }
-    createNextRecord();
+    Record * next = _inputBuffer.next();
+    this->_currentRecord.copy(*next);
+    delete next;
     ++ _count;
 	return true;
 } // ScanIterator::next
 
-void ScanIterator::createNextRecord()
+void ScanIterator::createNextRecord(int count)
 {
     if (_count > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(generateNewRecordData(),0);
-    this->_currentRecord.storeRecord(_file,(_count == _plan->_count - 1));
+    this->_currentRecord.storeRecord(_file,(count == _plan->_count - 1));
 } // ScanIterator::createNextRecord
 
 char * ScanIterator::generateNewRecordData ()

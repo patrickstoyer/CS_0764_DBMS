@@ -1,5 +1,6 @@
 #include "Iterator.h"
 #include "Record.h"
+#include "InputBuffer.h"
 #include <cstdio>
 #include <random>
 
@@ -23,9 +24,10 @@ public:
 private:
 	ScanPlan const * const _plan;
 	RowCount _count;
-	void createNextRecord ();
+	void createNextRecord(int count);
 	static char * generateNewRecordData ();
 	FILE* _file;
 	char * _buffer;
+    InputBuffer _inputBuffer;
 	static std::default_random_engine generator;
 }; // class ScanIterator

@@ -1,3 +1,4 @@
+#pragma once
 #include "Iterator.h"
 #include "Record.h"
 #include "InputStream.h"
