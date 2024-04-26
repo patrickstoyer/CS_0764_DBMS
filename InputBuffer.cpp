@@ -31,7 +31,8 @@ Record * InputBuffer::peek()
     char * data = new char [RECORD_SIZE];
     if ((fread(data,1,RECORD_SIZE,_inputFile) != 0) && (!feof(_inputFile)))
     {
-        fseek(_inputFile,-RECORD_SIZE-1,SEEK_CUR);
+        int offset = (USE_NEWLINES) ? -RECORD_SIZE-1 : -RECORD_SIZE;
+        fseek(_inputFile,offset,SEEK_CUR);
         return new Record(data,0);
     }
     delete [] data;
@@ -52,6 +53,7 @@ Record * InputBuffer::next()
 
         return new Record(data,0);
     }
+    delete [] data;
     char * lf = new char[1]{'~'};
     return new Record(lf,0);
 }

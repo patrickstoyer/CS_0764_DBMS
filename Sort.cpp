@@ -178,6 +178,7 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
                 _currentPQ->_inputStreams[0] = nullptr; // This would be _cacheRunPQ itself, which we oughtn't delete
                 delete _currentPQ;
                 _currentPQ = &_cacheRunPQ;
+                delete [] _inputBuffers;
             }
             _gracefulDegrade = false;
         }
@@ -273,13 +274,17 @@ void SortIterator::removeTmpFiles(bool ssdOnly)
 {
     for (int i = 1; i <= _ssdCount; i ++)
     {
-        remove(getOutputFilename(true,i));
+        char * filename = getOutputFilename(true , i);
+        remove(filename);
+        delete [] filename;
     }
     _ssdCount = 0;
     if (ssdOnly) return;
     for (int i = 1; i <= _hddCount; i ++)
     {
-        remove(getOutputFilename(false,i));
+        char * filename = getOutputFilename(false , i);
+        remove(filename);
+        delete [] filename;
     }
     _hddCount = 0;
 }

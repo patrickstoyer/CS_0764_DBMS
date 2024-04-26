@@ -67,9 +67,8 @@ bool ScanIterator::next ()
 
 void ScanIterator::createNextRecord(int count)
 {
-    if (_count > 0) this->_currentRecord.~Record();
-    new (&this->_currentRecord) Record(generateNewRecordData(),0);
-    this->_currentRecord.storeRecord(_file,(count == _plan->_count - 1));
+    Record next(generateNewRecordData(),0);
+    next.storeRecord(_file,(count == _plan->_count - 1));
 } // ScanIterator::createNextRecord
 
 char * ScanIterator::generateNewRecordData ()
@@ -79,7 +78,7 @@ char * ScanIterator::generateNewRecordData ()
 	// If appending new line at end, we'll generate RECORD_SIZE - 1 byte random, then newline;
 	int max = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
 	std::uniform_int_distribution<char> distribution(0,61);
-  	for (int i = 0; i < RECORD_SIZE; i++)
+  	for (int i = 0; i < max; i++)
 	{
 		char next = distribution(generator);
 		data[i] = range[next];	
