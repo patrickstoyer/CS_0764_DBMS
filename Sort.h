@@ -49,8 +49,7 @@ private:
     InputBuffer * _inputBuffers;
     FILE * tmpOutputFile{};
     char * tmpOutputBuffer{};
-
     void spillSsd();
-
     void closeTmpBuffer();
+    void removeTmpFiles(bool ssdOnly);
 }; // class SortIterator

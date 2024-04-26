@@ -97,6 +97,7 @@ SortIterator::~SortIterator ()
 	delete _input;
     delete [] _inputBuffers;
     delete _currentPQ;
+    removeTmpFiles(false);
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
 			(unsigned long) (_consumed));
@@ -172,11 +173,7 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
             if (_ssdGd)
             {
                 _ssdGd = false;
-                for (int i = 1; i <= _ssdCount; i ++)
-                {
-                    remove(getOutputFilename(true,i));
-                }
-                _ssdCount = 0;
+                removeTmpFiles(true);
                 BYTES_WRITTEN_SSD = 0;
                 _currentPQ->_inputStreams[0] = nullptr; // This would be _cacheRunPQ itself, which we oughtn't delete
                 delete _currentPQ;
@@ -270,4 +267,19 @@ void SortIterator::closeTmpBuffer()
         traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
         BYTES_WRITTEN_COUNTER = 0;
     }
+}
+
+void SortIterator::removeTmpFiles(bool ssdOnly)
+{
+    for (int i = 1; i <= _ssdCount; i ++)
+    {
+        remove(getOutputFilename(true,i));
+    }
+    _ssdCount = 0;
+    if (!ssdOnly) return;
+    for (int i = 1; i <= _hddCount; i ++)
+    {
+        remove(getOutputFilename(false,i));
+    }
+    _hddCount = 0;
 }
