@@ -276,7 +276,7 @@ void SortIterator::removeTmpFiles(bool ssdOnly)
         remove(getOutputFilename(true,i));
     }
     _ssdCount = 0;
-    if (!ssdOnly) return;
+    if (ssdOnly) return;
     for (int i = 1; i <= _hddCount; i ++)
     {
         remove(getOutputFilename(false,i));
