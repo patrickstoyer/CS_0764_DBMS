@@ -14,7 +14,7 @@ int CACHE_SIZE = 1000;// Default to 1 MB (= 1,000,000 B)
 int SSD_PAGE_SIZE =  20000; // Default to 200 MB/s * (0.1 ms = 0.0001 s) = 20 KB (= 20,000 B)
 int HDD_PAGE_SIZE = 500000; // Default to 100 MB/s *  (5 ms = 0.005 s) = 500 KB (= 500,000 B)
 [[maybe_unused]] int MEM_SIZE =   100000;//000; // Default to 100 MB (=  100,000,000 B)
-long long SSD_SIZE = 10000000;//000; // Default to 10GB (= 10,000,000,000 B)
+long long SSD_SIZE = 100000;//000; // Default to 10GB (= 10,000,000,000 B)
 long long BYTES_WRITTEN_SSD = 0;
 long long BYTES_WRITTEN_HDD = 0;
 long long BYTES_WRITTEN_COUNTER = 0;

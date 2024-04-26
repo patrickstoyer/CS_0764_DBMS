@@ -11,6 +11,7 @@ public:
     InputBuffer(const char * inputFile, char bufferType);
 	~InputBuffer ();
     Record * next() override;
+    Record * nextAndReplace() override;
     Record * peek() override;
     Record * peek(bool copy) override;
     void ready(int skipIndex) override;
@@ -18,6 +19,7 @@ public:
     void nullBuffer();
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
     bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap, int lastCache) override;
+    void reset(int size, int dir, bool resetStreams, bool initializing) override;
 private:
 	FILE * _inputFile{};
     char * _inputBuffer{};

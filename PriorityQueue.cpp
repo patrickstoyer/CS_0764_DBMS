@@ -158,6 +158,11 @@ Record * PriorityQueue::next()
     char * lf = new char[1]{'~'};
     auto * retVal = new Record(lf,_arr[MIN_NODE].index);
     replacePeek(*retVal);
+    //if (_type == 1)
+    //{
+     //   delete _inputStreams[retValindex].next()
+   // }
+
     if (strncmp(retVal->data,&EARLY_FENCE,1) == 0)
     {
         retVal = next();
@@ -177,13 +182,21 @@ Record * PriorityQueue::nextAndReplace ()
     }
     int index = _arr[MIN_NODE].index;
     Record * retVal;
-    if ((index > _size) || (_type == 0 ))
+    if ((index >= _size) || (_type == 0 ))
     {
         char * lf = new char[1]{'!'};
         retVal = new Record(lf,index);
     } else
     {
-        delete _inputStreams[index]->next();
+        // Remove current winner from _inputStream it came from and replace w/ next value
+        if ((_type == 2)&& (index==0)) // for _type 2, index 0 is cache level PQ, so we first need to recurse
+        {
+            delete _inputStreams[index]->nextAndReplace();
+        }
+        else
+        {
+            delete _inputStreams[index]->next();
+        }
         retVal = _inputStreams[index]->peek(true);
     }
     replacePeek(*retVal);
@@ -262,22 +275,41 @@ void PriorityQueue::replacePeek(Record& record,bool swap)
     add(_arr[MIN_NODE],index);
 }
 
-
-void PriorityQueue::storeRecords(FILE * outputFile, int lastCache)
+// Returns true if we finished storing records, false if we filled SSD
+//  (and caller needs to call again w/ a new HDD file on a PQ w/ SSD
+bool PriorityQueue::storeRecords(FILE * outputFile, int lastCache, bool isSsdGd)
 {
     char * lf = new char[1]{'~'};
     Record lateFence(lf,0);
 
     if (!_isReadyToNext) ready(lastCache);
     Record * currentRec;
+    if (!isSsdGd && (BYTES_WRITTEN_SSD + RECORD_SIZE > SSD_SIZE))
+    {
+        return false;
+    }
     for (currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
     {
         if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
         currentRec->storeRecord(outputFile,false);
         delete currentRec;
+        if (!isSsdGd && (BYTES_WRITTEN_SSD + RECORD_SIZE > SSD_SIZE))
+        {
+            return false;
+        }
     }
     delete currentRec;
-    reset(1,-1, true,false);
+    if (!isSsdGd)
+    {
+        reset(1,-1, true,false);
+    }
+    else
+    {
+        _inputStreams[0]->reset(1,-1, true,false);
+    }
+
+
+    return true;
 }
 
 void PriorityQueue::ready(int skipIndex)
@@ -293,11 +325,11 @@ void PriorityQueue::ready(int skipIndex)
         }
         for (int i = min; i < max; i++)
         {
-            if (i == skipIndex) {
+            if ((_type == 1) && (i == skipIndex)) {
                 remove(i);
                 continue;
             }
-            _inputStreams[i]->ready(-1);
+            _inputStreams[i]->ready((_type <= 1)?-1:skipIndex);
             addFromStream(i);
         }
     }

@@ -28,7 +28,7 @@ private:
     PriorityQueue _cacheRuns[95];
     int _lastCache;
     PriorityQueue _cacheRunPQ;
-    PriorityQueue _finalPQ;
+    PriorityQueue * _currentPQ;
     int _streamIndex;
     int _cacheIndex;
     int _numCaches;
@@ -37,6 +37,7 @@ private:
     void gracefulDegrade(Record& nextRecord);
     bool _gracefulDegrade;
     bool _firstPass;
+    bool _ssdGd;
     Record _lastStored;
 
     void moveToNextCache();
@@ -48,4 +49,8 @@ private:
     InputBuffer * _inputBuffers;
     FILE * tmpOutputFile{};
     char * tmpOutputBuffer{};
+
+    void spillSsd();
+
+    void closeTmpBuffer();
 }; // class SortIterator

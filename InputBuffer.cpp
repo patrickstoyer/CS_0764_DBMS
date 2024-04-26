@@ -92,4 +92,10 @@ void InputBuffer::trackBuffer()
         traceprintf("%s read of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_pageSize == HDD_PAGE_SIZE) ? "HDD" : "SSD",bytesRead,latency,TOTAL_LATENCY);
     }
 }
-void InputBuffer::reset() {}
+void InputBuffer::reset() {};
+void InputBuffer::reset(int size, int dir, bool resetStreams, bool initializing){};
+
+Record * InputBuffer::nextAndReplace()
+{
+    throw std::invalid_argument("Don't call nextAndReplace on InputBuffer");
+}

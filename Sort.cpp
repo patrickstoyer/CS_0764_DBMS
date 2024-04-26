@@ -20,7 +20,7 @@ Iterator * SortPlan::init () const
 
 SortIterator::SortIterator (SortPlan const * const plan):
 	_plan (plan), _input (plan->_input->init ()), _gracefulDegrade(false),
-    _firstPass(true),_consumed (0),_produced (0), _streamIndex(0),_cacheIndex(0),
+    _firstPass(true),_consumed (0),_produced (0), _streamIndex(0),_cacheIndex(0),_ssdGd(false),
     _numCaches(1),_lastCache(94),_ssdCount(0),_hddCount(0),_newGDFile(false),_bytesWritten(0)
 {
     traceprintf("sorting records\n");
@@ -31,7 +31,7 @@ SortIterator::SortIterator (SortPlan const * const plan):
     new (&_cacheRuns[_cacheIndex]) PriorityQueue(CACHE_SIZE / RECORD_SIZE,0);
     new (&_cacheRunPQ) PriorityQueue(95,1);
     _cacheRunPQ.add(_cacheIndex,_cacheRuns[_cacheIndex]);
-
+    _currentPQ = &_cacheRunPQ;
     // Looping over _consumed inputs
     while (_input->next())
     {
@@ -51,33 +51,32 @@ SortIterator::SortIterator (SortPlan const * const plan):
             //
         }
     }
-    if (_ssdCount>0)
+    if (_ssdCount > 0 || _hddCount > 0)
     {
-        fclose(tmpOutputFile);
-        delete [] tmpOutputBuffer;
+        closeTmpBuffer();
     }
     if (_firstPass)
     {
-        _finalPQ = _cacheRunPQ;
+        _currentPQ = &_cacheRunPQ;
         _cacheRunPQ = PriorityQueue();
     }
     else
     {
-        new (&_finalPQ) PriorityQueue(_ssdCount + _hddCount + 1,2);
-        _finalPQ.add(0,_cacheRunPQ);
+        _currentPQ = new PriorityQueue(_ssdCount + _hddCount + 1,2);
+        _currentPQ->add(0,_cacheRunPQ);
         _inputBuffers = new InputBuffer[_ssdCount + _hddCount];
         for (int i = 1; i <= _ssdCount; i++ )
         {
             char * filename = getOutputFilename(true , i);
             new (&_inputBuffers[i-1]) InputBuffer(filename, 2);
-            _finalPQ.add(i,_inputBuffers[i-1]);
+            _currentPQ->add(i,_inputBuffers[i-1]);
             delete [] filename;
         }
         for (int i = 1; i <= _hddCount; i++ )
         {
             char * filename = getOutputFilename(false, i);
             new (&_inputBuffers[i + _ssdCount - 1]) InputBuffer(filename, 1);
-            _finalPQ.add(i + _ssdCount, _inputBuffers[i + _ssdCount -1 ]);
+            _currentPQ->add(i + _ssdCount, _inputBuffers[i + _ssdCount -1 ]);
             delete [] filename;
         }
     }
@@ -97,6 +96,7 @@ SortIterator::~SortIterator ()
     delete [] _outputBuffer;
 	delete _input;
     delete [] _inputBuffers;
+    delete _currentPQ;
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
 			(unsigned long) (_consumed));
@@ -114,7 +114,7 @@ bool SortIterator::next()
     char * lf = new char[1]{'~'};
     if (_produced > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(lf,0);
-    _finalPQ.storeNextAndSwap(this->_currentRecord,_outputFile,true,-1);
+    _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1);
     ++ _produced;
 	return true;
 } // SortIterator::next
@@ -162,7 +162,26 @@ void SortIterator::addToCacheRuns(Record& nextRecord)
         {
             // If we're here, we filled the cache during the graceful degradation
             // We must clear the cache and stop graceful degradation
-            _cacheRunPQ.storeRecords(tmpOutputFile,_lastCache);
+            if (!_currentPQ->storeRecords(tmpOutputFile,_lastCache,_ssdGd))
+            {
+                closeTmpBuffer();
+                spillSsd();
+                _currentPQ->storeRecords(tmpOutputFile,_lastCache,_ssdGd);
+            }
+
+            if (_ssdGd)
+            {
+                _ssdGd = false;
+                for (int i = 1; i <= _ssdCount; i ++)
+                {
+                    remove(getOutputFilename(true,i));
+                }
+                _ssdCount = 0;
+                BYTES_WRITTEN_SSD = 0;
+                _currentPQ->_inputStreams[0] = nullptr; // This would be _cacheRunPQ itself, which we oughtn't delete
+                delete _currentPQ;
+                _currentPQ = &_cacheRunPQ;
+            }
             _gracefulDegrade = false;
         }
         moveToNextCache();
@@ -173,41 +192,28 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
 {
     if (_firstPass) _firstPass = false;
 
-    if (_newGDFile || !hasSsdSpaceRemaining()) {
+    if (_newGDFile || (!hasSsdSpaceRemaining() &&!_ssdGd)) {
         _newGDFile = false;
-        if (_ssdCount > 0)
+        if (_ssdCount > 0 || _hddCount > 0)
         {
-            fclose(tmpOutputFile);
-            delete [] tmpOutputBuffer;
-            if (BYTES_WRITTEN_COUNTER > 0)
-            {
-                double latency = (_hddCount > 0) ? 5 : 0.1;
-                TOTAL_LATENCY += latency;
-                traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
-                BYTES_WRITTEN_COUNTER = 0;
-            }
+            closeTmpBuffer();
         }
-        int bufferSize;
-        char * filename;
 
         if (hasSsdSpaceRemaining()) {
             traceprintf("spilling to SSD\n");
             _ssdCount++;
-            bufferSize = (BYTES_WRITTEN_SSD + SSD_PAGE_SIZE > SSD_SIZE) ? (int)(SSD_SIZE - BYTES_WRITTEN_SSD) : SSD_PAGE_SIZE;
-            filename = getOutputFilename(true, _ssdCount);
+            int bufferSize = (BYTES_WRITTEN_SSD + SSD_PAGE_SIZE > SSD_SIZE) ? (int)(SSD_SIZE - BYTES_WRITTEN_SSD) : SSD_PAGE_SIZE;
+            char * filename = getOutputFilename(true, _ssdCount);
+            tmpOutputFile = fopen(filename, "w");
+            delete [] filename;
+            tmpOutputBuffer = new char[bufferSize];
+            setvbuf(tmpOutputFile,tmpOutputBuffer,_IOFBF,bufferSize);
+            _bytesWritten = 0;
         } else {
-            traceprintf("spilling to HDD\n");
-            _hddCount++;
-            bufferSize = HDD_PAGE_SIZE;
-            filename = getOutputFilename(false, _hddCount);
+            spillSsd();
         }
-        tmpOutputFile = fopen(filename, "w");
-        delete [] filename;
-        tmpOutputBuffer = new char[bufferSize];
-        setvbuf(tmpOutputFile,tmpOutputBuffer,_IOFBF,bufferSize);
-        _bytesWritten = 0;
     }
-    if (!_cacheRunPQ.storeNextAndSwap(nextRecord,tmpOutputFile,false,_lastCache)) // Returns true if successfully swapped in nextRecord
+    if (!_currentPQ->storeNextAndSwap(nextRecord,tmpOutputFile,false,_lastCache)) // Returns true if successfully swapped in nextRecord
     {
         //_cacheRuns[_cacheIndex].add(nextRecord,_streamIndex++);
         addToCacheRuns(nextRecord);
@@ -225,4 +231,43 @@ char * SortIterator::getOutputFilename(bool _type, int _count)
 {
     if (_type) return new char[17]{'s','s','d','o','u','t','p','u','t',(char)( '0' + _count/100),(char)( '0' + (_count/10)%10),(char)( '0' + _count % 10),'.','t','x','t','\0'};
     return new char[17]{'h','d','d','o','u','t','p','u','t',(char)( '0' + _count/100),(char)( '0' + (_count/10)%10),(char)( '0' + _count % 10),'.','t','x','t','\0'};
+}
+
+void SortIterator::spillSsd()
+{
+    char * filename;
+    //Make ssd spill pq
+    _currentPQ = new PriorityQueue(_ssdCount + 1,2);
+    _currentPQ->add(0,_cacheRunPQ);
+    _inputBuffers = new InputBuffer[_ssdCount];
+    for (int i = 1; i <= _ssdCount; i++ )
+    {
+        filename = getOutputFilename(true , i);
+        new (&_inputBuffers[i-1]) InputBuffer(filename, 2);
+        _currentPQ->add(i,_inputBuffers[i-1]);
+        delete [] filename;
+    }
+    _ssdGd = true;
+    traceprintf("spilling to HDD\n");
+    _hddCount++;
+    int bufferSize = HDD_PAGE_SIZE;
+    filename = getOutputFilename(false, _hddCount);
+    tmpOutputFile = fopen(filename, "w");
+    delete [] filename;
+    tmpOutputBuffer = new char[bufferSize];
+    setvbuf(tmpOutputFile,tmpOutputBuffer,_IOFBF,bufferSize);
+    _bytesWritten = 0;
+}
+
+void SortIterator::closeTmpBuffer()
+{
+    fclose(tmpOutputFile);
+    delete [] tmpOutputBuffer;
+    if (BYTES_WRITTEN_COUNTER > 0)
+    {
+        double latency = (_hddCount > 0) ? 5 : 0.1;
+        TOTAL_LATENCY += latency;
+        traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
+        BYTES_WRITTEN_COUNTER = 0;
+    }
 }

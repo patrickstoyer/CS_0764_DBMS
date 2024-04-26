@@ -6,7 +6,7 @@ public:
     PriorityQueue();
     PriorityQueue(int capacity, int type);
     ~PriorityQueue();
-    void storeRecords(FILE * outputFile, int lastCache);
+    bool storeRecords(FILE * outputFile, int lastCache, bool isSsdGd);
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
     bool storeNextAndSwap(Record& record, FILE * outputFile,bool alwaysSwap,int lastCache) override;
     Record * peek () override; // Returns arr[0] (the min value)
@@ -16,12 +16,22 @@ public:
     void ready(int skipIndex) override;
     bool isFull() const;
     Record * next () override; // Return arr[0] and replace with late_fence
-    Record * nextAndReplace(); // Return arr[0] and replaces it from the stream it came from
+    Record * nextAndReplace() override; // Return arr[0] and replaces it from the stream it came from
     void incrementSize();
 
     void reset() override;
+    void reset(int size, int dir, bool resetStreams, bool initializing) override;
 
     InputStream ** _inputStreams{};
+//     Each node represents a record that was loaded
+//     Only 1 input stream (_inputStreams[0]) of type InputBuffer (from HDD)
+// 1 = Mem level (CAPACITY = ~97, (100 MB - a few MB for buffers, code, etc.)/ 1 MB per cache)
+//     Each node represents the min value of a cache level PQ.
+//     Each input stream is a cache level
+// 2 = X SSD input streams + 1 Mem level PQ
+//     Each node in arr represents the next seen value from a sorted SSD-size run stored on HDD
+//     All _inputStreams should be of type InputBuffer (from HDD)
+Record * _arr{};
 private:
     void initializePQ();
     void remove(int stream); // Removes the value that came from stream
@@ -29,20 +39,11 @@ private:
     int _size{}; // Number of streams/inputs currently being used
     int _capacity{}; // Maximum size of array
     int _type{} ; // 0 = Cache level. (CAPACITY = 1 MB / RECORD_SIZE)
-                 //     Each node represents a record that was loaded
-                 //     Only 1 input stream (_inputStreams[0]) of type InputBuffer (from HDD)
-                 // 1 = Mem level (CAPACITY = ~97, (100 MB - a few MB for buffers, code, etc.)/ 1 MB per cache)
-                 //     Each node represents the min value of a cache level PQ.
-                 //     Each input stream is a cache level
-                 // 2 = X SSD input streams + 1 Mem level PQ
-                 //     Each node in arr represents the next seen value from a sorted SSD-size run stored on HDD
-                 //     All _inputStreams should be of type InputBuffer (from HDD)
-    Record * _arr{}; // Sorted data - Size of arr = size of streams (except cache level PQ)
+    // Sorted data - Size of arr = size of streams (except cache level PQ)
     // Pointers to streams of data _inputStreams[0] should be a
     bool _isReadyToNext{}; // If true, we have repaired the array since the last early fence insertion
     void addFromStream(int stream);
     void reset(bool initializing);
-    void reset(int size, int dir, bool resetStreams, bool initializing);
     void repair();
     void replacePeek(Record &record);
     void replacePeek(Record &record,bool swap);
