@@ -11,5 +11,5 @@ public:
     virtual void reset () = 0;
     virtual void reset(int size, int dir, bool resetStreams, bool initializing) = 0;
     virtual bool storeNextAndSwap(Record& record, FILE * outputFile) = 0;
-    virtual bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap,int lastCache) = 0;
+    virtual bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap,int lastCache, bool& wasDuplicate) = 0;
 };

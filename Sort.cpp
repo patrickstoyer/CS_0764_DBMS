@@ -8,8 +8,7 @@ SortPlan::SortPlan (Plan * const input) : _input (input)
 
 SortPlan::~SortPlan ()
 {
-    //TRACE (true);
-	delete _input;
+    delete _input;
 } // SortPlan::~SortPlan
 
 Iterator * SortPlan::init () const
@@ -58,7 +57,6 @@ SortIterator::SortIterator (SortPlan const * const plan):
     if (_firstPass)
     {
         _currentPQ = &_cacheRunPQ;
-        _cacheRunPQ = PriorityQueue();
     }
     else
     {
@@ -91,12 +89,9 @@ SortIterator::SortIterator (SortPlan const * const plan):
 
 SortIterator::~SortIterator ()
 {
-    TRACE (true);
     fclose(_outputFile);
     delete [] _outputBuffer;
 	delete _input;
-    delete [] _inputBuffers;
-    delete _currentPQ;
     removeTmpFiles(false);
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
@@ -106,19 +101,47 @@ SortIterator::~SortIterator ()
 bool SortIterator::next()
 {
     if (_produced >= _consumed)
-     {
-        char * lf = new char[1]{'~'};
-        this->_currentRecord.~Record();
-        new (&this->_currentRecord) Record(lf,0);
+    {
+        finalNextCleanup();
         return false;
     }
     char * lf = new char[1]{'~'};
     if (_produced > 0) this->_currentRecord.~Record();
     new (&this->_currentRecord) Record(lf,0);
-    _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1);
+    // Keep calling StoreNextAndSwap till we got a non-duplicate
+    bool wasDupe = false;
+    _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1,wasDupe);
+    while (wasDupe)
+    {
+        wasDupe = false;
+        lf = new char[1]{'~'};
+        this->_currentRecord.~Record();
+        new (&this->_currentRecord) Record(lf,0);
+        _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1,dupe);
+    }
+    if (this->_currentRecord.isSentinel())
+    {
+        finalNextCleanup();
+        return false;
+    }
     ++ _produced;
-	return true;
+    return true;
 } // SortIterator::next
+
+void SortIterator::finalNextCleanup()
+{
+    if (_firstPass)
+    {
+        _currentPQ = nullptr;
+    }
+    else
+    {
+        delete [] _inputBuffers;
+    }
+    char * lf = new char[1]{'~'};
+    this->_currentRecord.~Record();
+    new (&this->_currentRecord) Record(lf,0);
+}
 
 
 void SortIterator::moveToNextCache()
@@ -211,7 +234,8 @@ void SortIterator::gracefulDegrade(Record& nextRecord)
             spillSsd();
         }
     }
-    if (!_currentPQ->storeNextAndSwap(nextRecord,tmpOutputFile,false,_lastCache)) // Returns true if successfully swapped in nextRecord
+    bool tmp = false;
+    if (!_currentPQ->storeNextAndSwap(nextRecord,tmpOutputFile,false,_lastCache,tmp)) // Returns true if successfully swapped in nextRecord
     {
         //_cacheRuns[_cacheIndex].add(nextRecord,_streamIndex++);
         addToCacheRuns(nextRecord);
@@ -265,7 +289,7 @@ void SortIterator::closeTmpBuffer()
     {
         double latency = (_hddCount > 0) ? 5 : 0.1;
         TOTAL_LATENCY += latency;
-        traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
+        traceprintf("%s write of %lld bytes with latency %.1f ms (total I/O latency: %.1f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
         BYTES_WRITTEN_COUNTER = 0;
     }
 }

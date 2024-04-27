@@ -1,14 +1,16 @@
+#pragma once
 #include "Record.h"
 #include "InputStream.h"
 
 class PriorityQueue : public InputStream {
+    friend class InputBuffer;
 public:
     PriorityQueue();
     PriorityQueue(int capacity, int type);
     ~PriorityQueue();
     bool storeRecords(FILE * outputFile, int lastCache, bool isSsdGd);
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
-    bool storeNextAndSwap(Record& record, FILE * outputFile,bool alwaysSwap,int lastCache) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile,bool alwaysSwap,int lastCache,bool& wasDuplicate) override;
     Record * peek () override; // Returns arr[0] (the min value)
     Record * peek (bool copy) override; // Returns arr[0] (the min value)
     void add(Record& nextRecord, int stream); // Adds a new node from _inputStreams[stream], assumes stream exists
@@ -31,9 +33,10 @@ public:
 // 2 = X SSD input streams + 1 Mem level PQ
 //     Each node in arr represents the next seen value from a sorted SSD-size run stored on HDD
 //     All _inputStreams should be of type InputBuffer (from HDD)
-Record * _arr{};
+    Record * _arr{};
 private:
     void initializePQ();
+    static Record _lastSaved;
     void remove(int stream); // Removes the value that came from stream
     static int parent(int index); // Gets index of parent of index
     int _size{}; // Number of streams/inputs currently being used

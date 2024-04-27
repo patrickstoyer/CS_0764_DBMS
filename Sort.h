@@ -52,4 +52,5 @@ private:
     void spillSsd();
     void closeTmpBuffer();
     void removeTmpFiles(bool ssdOnly);
+    void finalNextCleanup();
 }; // class SortIterator

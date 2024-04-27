@@ -12,17 +12,18 @@ InputBuffer::InputBuffer(const char * filename, char bufferType) : _lastRead(0)
     _inputBuffer = new char[_pageSize];
     setvbuf(_inputFile,_inputBuffer,_IOFBF,_pageSize);
 
-    fseek (_inputFile, 0, SEEK_END);   // non-portable
-    _fileSize=ftell(_inputFile);
-    fseek(_inputFile,0,0);
+    _bytesReadCounter=0;
+
 }
 InputBuffer::~InputBuffer()
 {
+    trackBuffer(true);
     delete [] _inputBuffer;
     fclose(_inputFile);
 }
 void InputBuffer::nullBuffer()
 {
+    this->~InputBuffer();
     _inputBuffer = nullptr;
     _inputFile = nullptr;
 }
@@ -49,7 +50,8 @@ Record * InputBuffer::next()
 
     if ((fread(data,1,RECORD_SIZE,_inputFile) != 0) && (!feof(_inputFile)))
     {
-        trackBuffer();
+        _bytesReadCounter += RECORD_SIZE;
+        trackBuffer(false);
 
         return new Record(data,0);
     }
@@ -61,13 +63,30 @@ Record * InputBuffer::next()
 void InputBuffer::ready(int skipIndex) {}
 bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile)
 {
-    return storeNextAndSwap(record,outputFile,false,-1);
+    bool tmp = false;
+    return storeNextAndSwap(record,outputFile,false,-1,tmp);
 }
 
-bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap,int lastCache)
+bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap,int lastCache, bool& wasDuplicate)
 {
     Record * nextRecord = next();
-    nextRecord->storeRecord(outputFile,false);
+    if (!REMOVE_DUPES
+        || (peek()->compare(PriorityQueue::_lastSaved)!=0)
+        || !peek()->isDuplicate(PriorityQueue::_lastSaved))
+    {
+        nextRecord->storeRecord(outputFile, false);
+    }
+    else
+    {
+        wasDuplicate = true;
+        // Update duplicate parity
+        int recSize = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
+        for (int i = 0; i < recSize; i++) {
+            DUPLICATE_PARITY = (char) (DUPLICATE_PARITY ^ peek()->data[i]);
+        }
+    }
+    PriorityQueue::_lastSaved.copy(*peek());
+
     if (alwaysSwap)
     {
         record.~Record();
@@ -79,20 +98,18 @@ bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alway
     return false; // Always return false -- we cannot swap the input into the existing file
 }
 
-void InputBuffer::trackBuffer()
+void InputBuffer::trackBuffer(bool flush)
 {
     // Buffering is handled automatically by C++ via setvbuf,
     //  so we are really just guessing at its behavior
-    long long tell = ftell(_inputFile);
-    if (_lastRead < tell)
-    {
-        long long bytesRead = (_lastRead + _pageSize > _fileSize) ? _fileSize - _lastRead : _pageSize;
-        _lastRead += bytesRead;
-        double latency = (_pageSize == HDD_PAGE_SIZE) ? 5 : 0.1;
-        TOTAL_READ += bytesRead;
-        TOTAL_LATENCY += latency;
-        traceprintf("%s read of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(_pageSize == HDD_PAGE_SIZE) ? "HDD" : "SSD",bytesRead,latency,TOTAL_LATENCY);
-    }
+    if (!((_bytesReadCounter > _pageSize)||(flush && _bytesReadCounter >0))) return;
+    long long bytesRead = (_bytesReadCounter > _pageSize) ? _pageSize : _bytesReadCounter;
+    _bytesReadCounter -= bytesRead;
+    double latency = (_pageSize == HDD_PAGE_SIZE) ? 5 : 0.1;
+    TOTAL_READ += bytesRead;
+    TOTAL_LATENCY += latency;
+    //traceprintf("%s read of %lld bytes with latency %.1f ms (total I/O latency: %.1f)\n",(_pageSize == HDD_PAGE_SIZE) ? "HDD" : "SSD",bytesRead,latency,TOTAL_LATENCY);
+
 }
 void InputBuffer::reset() {};
 void InputBuffer::reset(int size, int dir, bool resetStreams, bool initializing){};

@@ -18,7 +18,7 @@ public:
     void reset() override;
     void nullBuffer();
     bool storeNextAndSwap(Record& record, FILE * outputFile) override;
-    bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap, int lastCache) override;
+    bool storeNextAndSwap(Record& record, FILE * outputFile, bool alwaysSwap, int lastCache, bool& wasDuplicate) override;
     void reset(int size, int dir, bool resetStreams, bool initializing) override;
 private:
 	FILE * _inputFile{};
@@ -26,6 +26,7 @@ private:
     long long _fileSize;
     long long _lastRead;
     long long _pageSize;
+    long long _bytesReadCounter;
 
-    void trackBuffer();
+    void trackBuffer(bool flush);
 }; // class InputBuffer

@@ -19,7 +19,6 @@ Record::Record()
 Record::~Record ()
 {
     delete [] data;
-//	TRACE (true);
 }
 // Called to check sort order   
 bool Record::sortsBefore(Record& other) const
@@ -29,7 +28,7 @@ bool Record::sortsBefore(Record& other) const
 int Record::compare(Record& other) const
 {
     int keySize = KEY_SIZE;
-    if ((this->data[0] == LATE_FENCE) || (this->data[0] == EARLY_FENCE) || (other.data[0] == LATE_FENCE) || (other.data[0] == EARLY_FENCE)) 
+    if (this->isSentinel() || other.isSentinel())
     {
         keySize = 1;
     }
@@ -38,7 +37,7 @@ int Record::compare(Record& other) const
 }
 bool Record::isDuplicate(Record& other) const
 {
-    if ((this->data[0] == LATE_FENCE) || (this->data[0] == EARLY_FENCE) || (other.data[0] == LATE_FENCE) || (other.data[0] == EARLY_FENCE)) return false;
+    if (this->isSentinel() || other.isSentinel()) return false;
     int cmp = strncmp(this->data, other.data, RECORD_SIZE);
     bool retVal = (cmp == 0); // Cmp>0 = sorts after cmp = 0 = match, cmp < 0 = sorts
     return retVal;
@@ -46,7 +45,7 @@ bool Record::isDuplicate(Record& other) const
 
 void Record::storeRecord (FILE * file, bool flush) const
  {
-    if ((this->data[0] == LATE_FENCE) ||(this->data[0] == EARLY_FENCE)) return;
+    if (this->isSentinel()) return;
     // Note that buffering happens automatically, we add buffer array when we open the file
     fwrite(this->data,1,RECORD_SIZE,file);
     if (flush)
@@ -73,10 +72,15 @@ void Record::trackBuffer (bool flush)
     {
         double latency = (!isSsd) ? 5 : 0.1;
         TOTAL_LATENCY += latency;
-        traceprintf("%s write of %lld bytes with latency %.2f ms (total I/O latency: %.2f)\n",(!isSsd) ? "HDD" : "SSD",pageSize,latency,TOTAL_LATENCY);
+      //  traceprintf("%s write of %lld bytes with latency %.1f ms (total I/O latency: %.1f ms)\n",(!isSsd) ? "HDD" : "SSD",pageSize,latency,TOTAL_LATENCY);
         BYTES_WRITTEN_COUNTER = BYTES_WRITTEN_COUNTER % pageSize;
     }
 
+}
+
+bool Record::isSentinel() const
+{
+    return (this->data[0] == LATE_FENCE) || (this->data[0] == EARLY_FENCE);
 }
 
 
@@ -91,14 +95,14 @@ void Record::exchange(Record &other)
 }
 void Record::copy(Record &other)
 {
-    int dataSize = ((other.data[0] == LATE_FENCE) ||(other.data[0] == EARLY_FENCE)) ? 1 : RECORD_SIZE;
+    int dataSize = (other.isSentinel()) ? 1 : RECORD_SIZE;
     delete [] this->data;
     this->data = new char[dataSize];
     strncpy(this->data,other.data,dataSize);
 }
 Record::Record(Record &other)
 {
-    int recSize = ((other.data[0] == LATE_FENCE) ||(other.data[0] == EARLY_FENCE)) ? 1 : RECORD_SIZE;
+    int recSize = (other.isSentinel()) ? 1 : RECORD_SIZE;
     this->data = new char [recSize];
     strncpy(this->data,other.data,recSize);
     this->index = other.index;

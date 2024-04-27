@@ -68,17 +68,28 @@ void PriorityQueue::reset(int size,int dirMult, bool resetStreams,bool initializ
 void PriorityQueue::add(Record& nextRecord, int stream)
 {
     bool checkDupes = REMOVE_DUPES;
+    int sizeDelta=0;
     if (_type == 0)
     {
-        if ((strncmp(nextRecord.data,&LATE_FENCE,1) != 0)&&(strncmp(nextRecord.data,&EARLY_FENCE,1)!=0))
+        // If new record has data, increment size
+        if (!nextRecord.isSentinel())
         {
-            if (_size < _capacity) _size ++;
+            sizeDelta++;
         }
         else
         {
-            if (_size > 0) _size --;
-            checkDupes=false;
+            // Otherwise it is a sentinel, so decrement size
+            checkDupes = false;
         }
+
+        //_arr[MIN_NODE] will be overwritten, so if it had data, decrement size
+        if  (!_arr[MIN_NODE].isSentinel())
+        {
+            sizeDelta--;
+        }
+        if ((_size < 0) || (_size > _capacity))
+            throw std::invalid_argument("Size is out of bounds");
+
     }
     //std::cerr << "b";
     nextRecord.index = stream;
@@ -90,23 +101,14 @@ void PriorityQueue::add(Record& nextRecord, int stream)
     for (int index = parent(_capacity + stream); index != 0; index = parent(index))
     {
         // std::cerr << "e";
-        int cmp=candidate.compare(_arr[index]);
-        if (cmp < 0) continue; // cmp > 0 => candidate sorts before PQ value
-        if ((cmp == 0) && checkDupes && candidate.isDuplicate(_arr[index]))
-        {
-            // Update duplicate parity
-            for (int i = 0; i < RECORD_SIZE; i ++)
-            {
-                DUPLICATE_PARITY = (char)(DUPLICATE_PARITY ^ candidate.data[i]);
-            }
-            return; // cmp == 0 is a duplicate
-        }
+        if (candidate.sortsBefore(_arr[index])) continue; // cmp > 0 => candidate sorts before PQ value
         // Otherwise we can swap
         candidate.exchange(_arr[index]);
 
     }
     //std::cerr << "g";
     candidate.exchange(_arr[MIN_NODE]);
+    _size += sizeDelta;
     //std::cerr << "h";
     //std::cerr << "i";
 }
@@ -158,16 +160,12 @@ Record * PriorityQueue::next()
     char * lf = new char[1]{'~'};
     auto * retVal = new Record(lf,_arr[MIN_NODE].index);
     replacePeek(*retVal);
-    //if (_type == 1)
-    //{
-     //   delete _inputStreams[retValindex].next()
-   // }
 
-    if (strncmp(retVal->data,&EARLY_FENCE,1) == 0)
+    if (retVal->data[0] == EARLY_FENCE)
     {
         retVal = next();
     }
-    if (strncmp(retVal->data,&EARLY_FENCE,1)==0)
+    if (retVal->data[0] == EARLY_FENCE)
     {
         reset();
     }
@@ -200,12 +198,12 @@ Record * PriorityQueue::nextAndReplace ()
         retVal = _inputStreams[index]->peek(true);
     }
     replacePeek(*retVal);
-    if (strncmp(retVal->data,&EARLY_FENCE,1) == 0)
+    if (retVal->data[0] == EARLY_FENCE)
     {
         delete retVal;
         retVal = nextAndReplace();
     }
-    if (strncmp(retVal->data,&LATE_FENCE,1)==0)
+    if (retVal->data[0] == LATE_FENCE)
     {
         reset();
     }
@@ -213,9 +211,10 @@ Record * PriorityQueue::nextAndReplace ()
 }
 bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile)
 {
-    return storeNextAndSwap(record,outputFile,false,-1);
+    bool tmp = false;
+    return storeNextAndSwap(record,outputFile,false,-1,tmp);
 }
-bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool alwaysSwap, int lastCache)
+bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool alwaysSwap, int lastCache, bool& wasDuplicate)
 {
     if (!_isReadyToNext)
     {
@@ -223,7 +222,23 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool al
     }
     if (_type == 0)
     {
-        peek()->storeRecord(outputFile, false);
+        //Don't actually save if it duplicates last saved
+        if (!REMOVE_DUPES
+            || (peek()->compare(PriorityQueue::_lastSaved)!=0)
+            || !peek()->isDuplicate(PriorityQueue::_lastSaved))
+        {
+            peek()->storeRecord(outputFile, false);
+            PriorityQueue::_lastSaved.copy(*peek());
+        }
+        else
+        {
+            wasDuplicate = true;
+            // Update duplicate parity
+            int recSize = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
+            for (int i = 0; i < recSize; i++) {
+                DUPLICATE_PARITY = (char) (DUPLICATE_PARITY ^ peek()->data[i]);
+            }
+        }
         // If record is less than the min we just saved, we can't add it
         if (!record.sortsBefore(*peek())||alwaysSwap)
         {
@@ -247,7 +262,8 @@ bool PriorityQueue::storeNextAndSwap (Record& record, FILE * outputFile, bool al
         //    - Storing the min (note that if somehow the min w/in the _inputStreams differs from the overall PQ, this will fail)
         //    - Comparing the stored min with the new record (to see if we can swap it into the cache)
         //    - Swapping into the cache
-        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile,alwaysSwap,-1);
+
+        bool retVal = _inputStreams[index]->storeNextAndSwap(record, outputFile,alwaysSwap,-1,wasDuplicate);
         Record * nextRec = _inputStreams[index]->peek();
 
         replacePeek(*nextRec, false); // We will always want the peek of the stream to be in the array
@@ -290,7 +306,7 @@ bool PriorityQueue::storeRecords(FILE * outputFile, int lastCache, bool isSsdGd)
     }
     for (currentRec = nextAndReplace(); !lateFence.sortsBefore(*currentRec) ; currentRec = nextAndReplace())
     {
-        if (strncmp(currentRec->data,&EARLY_FENCE,1) == 0) continue;
+        if (currentRec->data[0] == EARLY_FENCE) continue;
         currentRec->storeRecord(outputFile,false);
         delete currentRec;
         if (!isSsdGd && (BYTES_WRITTEN_SSD + RECORD_SIZE > SSD_SIZE))

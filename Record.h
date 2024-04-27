@@ -16,12 +16,10 @@ public:
     void copy(Record& other);
     char * data;
     int index{};
-
     int compare(Record &other) const;
-
     bool isDuplicate(Record &other) const;
-
     static void trackBuffer(bool flush);
+    bool isSentinel() const;
 }; // class Record
 
 extern int RECORD_SIZE;

@@ -28,4 +28,8 @@ private:
 	void updateParity(Record& record);
 	void updateIsSorted(Record& nextRecord);
 	RowCount _consumed, _produced;
+    int _hasDuplicates;
+
+    void printStuff();
+
 }; // class FilterIterator

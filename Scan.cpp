@@ -32,7 +32,7 @@ ScanIterator::ScanIterator (ScanPlan const * const plan) :
     setvbuf(_file,_buffer,_IOFBF,HDD_PAGE_SIZE);
 	if (SEED > 0) generator.seed(SEED);
 
-    traceprintf("generating %lld records of size %d\n",_plan->_count,RECORD_SIZE);
+    traceprintf("generating %lld records of size %d\n",_plan->_count,(USE_NEWLINES) ? RECORD_SIZE - 1: RECORD_SIZE);
     ALWAYS_HDD = true;
 	for (int i = 0; i < _plan->_count; i++)
     {
@@ -46,8 +46,7 @@ ScanIterator::ScanIterator (ScanPlan const * const plan) :
 
 ScanIterator::~ScanIterator ()
 {
-	TRACE (true);
-	traceprintf ("produced %lu of %lu rows\n",
+    traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_count),
 			(unsigned long) (_plan->_count));
 } // ScanIterator::~ScanIterator
@@ -56,6 +55,7 @@ bool ScanIterator::next ()
 {
     if (_count >= _plan->_count)
     {
+        _inputBuffer.nullBuffer();
         return false;
     }
     Record * next = _inputBuffer.next();
