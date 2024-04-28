@@ -33,6 +33,9 @@ Record * InputBuffer::peek()
     if ((fread(data,1,RECORD_SIZE,_inputFile) != 0) && (!feof(_inputFile)))
     {
         int offset = (USE_NEWLINES) ? -RECORD_SIZE-1 : -RECORD_SIZE;
+		#ifdef linux
+		offset += 1;
+		#endif
         fseek(_inputFile,offset,SEEK_CUR);
         return new Record(data,0);
     }
@@ -81,7 +84,8 @@ bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alway
         wasDuplicate = true;
         // Update duplicate parity
         int recSize = (USE_NEWLINES) ? RECORD_SIZE - 1 : RECORD_SIZE;
-        for (int i = 0; i < recSize; i++) {
+        for (int i = 0; i < recSize; i++) 
+		{
             DUPLICATE_PARITY = (char) (DUPLICATE_PARITY ^ peek()->data[i]);
         }
     }
