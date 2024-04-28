@@ -77,23 +77,23 @@ Overview of classes:
 OTHER NOTES
 -----------
 1) Command line options
- -c - count of records (-c 1000 = 1000 records)
- -s - size of records (-s 1024 = 1024 bytes per record)
+ -c - count of records (-c 1000 = 1000 records) NOTE that this does NOT handle commas - 25,000 will be parsed as 25, so use 25000 instead
+ -s - size of records (-s 1024 = 1024 bytes per record) NOTE that this does NOT handle commas - 25,000 will be parsed as 25, so use 25000 instead
  -o - trace filename (-o trace.txt = output trace to trace.txt)
  -n - turn off newlines 
-	- if not set, output.txt and input.txt will have each record on a new line (so the size of the files will be (RECORD_SIZE + 1 ) * NUMBER_OF_RECORDS).
+	- if not set, outputfile.txt and inputfile.txt will have each record on a new line (so the size of the files will be (RECORD_SIZE + 1 ) * NUMBER_OF_RECORDS).
     - if set, those files will have records as a continuous stream with no characters between them (so the output will be RECORD_SIZE * NUMBER_OF_RECORDS).
  -d - turn off duplicate removal
  -seed - set a seed for the random number generation - if set, each run should generate the same data for the records
 
 2) Input/Output
-- The input/output of a successful run should be sent to input.txt and output.txt resp. 
+- The input/output of a successful run should be sent to inputfile.txt and outputfile.txt resp. 
 - Each file should contain either -c lines with -s random alphanumeric values, or a continuous stream of -c * -s alphanumeric values
 - Output should of course be sorted and have duplicates removed (unless -d is set), whereas input should not.
 - In the middle of the sort, temporary "SSD" and "HDD" files are generated that are used for spilling, and should normally be deleted on program termination 
 
 3) Trace file
-- Reports number of rows/records produced/consumed + final bytes written/read, estimated latency given the SSD/HDD parameters we were supposed to emulate, actual elapsed time, and some basic information about the calls being hit.
+- Reports number of rows/records produced/consumed + final bytes written/read (including writing/reading to the inputfile), estimated latency given the SSD/HDD parameters we were supposed to emulate, actual elapsed time, and some basic information about the calls being hit.
 - Filter.cpp also reports whether the input was sorted, if any duplicates were found (which is not known if the input wasn't sorted based on how I checked this), and the character-wise XOR parity. 
 	- This is shown twice, first for the input and then for the output
 	- A correct output should be sorted, have no duplicates, and parity should match (if duplicates are removed, we will track the parity of the removed duplicates and report the parity with and without them).
@@ -106,3 +106,6 @@ OTHER NOTES
 - For the SSD/HDD spilling files, I wasn't entirely sure how we were intended to emulate these -- I just did so logically, i.e. in the way I treated them, but both were ultimately just regular files on my machine.
 - Similarly, for the latency metrics, I wasn't actually handling these any differently, so the I/O latency is just an estimate based on how many pages I would have written to memory (and, as I buffered the files by passing a buffer array and page size to setvbuf, this estimate may not accurately reflect how the OS is buffering the writes behind the scenes)
 
+6) Portability
+- I developed this on Windows -- when I try running on Linux, it does not work as expected at all (it runs without crashing, but all the data in inputfile.txt/outputfile.txt seems to be gibberish
+- So in other words, I cannot verify that it will work outside of Windows

@@ -117,7 +117,7 @@ bool SortIterator::next()
         lf = new char[1]{'~'};
         this->_currentRecord.~Record();
         new (&this->_currentRecord) Record(lf,0);
-        _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1,dupe);
+        _currentPQ->storeNextAndSwap(this->_currentRecord,_outputFile,true,-1,wasDupe);
     }
     if (this->_currentRecord.isSentinel())
     {
@@ -289,7 +289,7 @@ void SortIterator::closeTmpBuffer()
     {
         double latency = (_hddCount > 0) ? 5 : 0.1;
         TOTAL_LATENCY += latency;
-        traceprintf("%s write of %lld bytes with latency %.1f ms (total I/O latency: %.1f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
+       // traceprintf("%s write of %lld bytes with latency %.1f ms (total I/O latency: %.1f)\n",(_hddCount > 0) ? "HDD" : "SSD",BYTES_WRITTEN_COUNTER,latency,TOTAL_LATENCY);
         BYTES_WRITTEN_COUNTER = 0;
     }
 }
