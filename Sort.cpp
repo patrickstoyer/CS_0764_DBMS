@@ -92,6 +92,7 @@ SortIterator::~SortIterator ()
     fclose(_outputFile);
     delete [] _outputBuffer;
 	delete _input;
+	delete _currentPQ;
     removeTmpFiles(false);
 	traceprintf ("produced %lu of %lu rows\n",
 			(unsigned long) (_produced),
@@ -137,6 +138,7 @@ void SortIterator::finalNextCleanup()
     else
     {
         delete [] _inputBuffers;
+		_currentPQ->_inputStreams[0] = nullptr; // This would be cache-level PQ, which we don't want to delete 
     }
     char * lf = new char[1]{'~'};
     this->_currentRecord.~Record();

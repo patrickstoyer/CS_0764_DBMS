@@ -19,7 +19,7 @@ InputBuffer::~InputBuffer()
 {
     trackBuffer(true);
     delete [] _inputBuffer;
-    fclose(_inputFile);
+    if (_inputFile!= nullptr) fclose(_inputFile);
 }
 void InputBuffer::nullBuffer()
 {
@@ -71,8 +71,8 @@ bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alway
 {
     Record * nextRecord = next();
     if (!REMOVE_DUPES
-        || (peek()->compare(PriorityQueue::_lastSaved)!=0)
-        || !peek()->isDuplicate(PriorityQueue::_lastSaved))
+        || (nextRecord->compare(PriorityQueue::_lastSaved)!=0)
+        || !nextRecord->isDuplicate(PriorityQueue::_lastSaved))
     {
         nextRecord->storeRecord(outputFile, false);
     }
@@ -85,7 +85,7 @@ bool InputBuffer::storeNextAndSwap(Record& record, FILE * outputFile, bool alway
             DUPLICATE_PARITY = (char) (DUPLICATE_PARITY ^ peek()->data[i]);
         }
     }
-    PriorityQueue::_lastSaved.copy(*peek());
+    PriorityQueue::_lastSaved.copy(*nextRecord);
 
     if (alwaysSwap)
     {

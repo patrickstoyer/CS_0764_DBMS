@@ -1,27 +1,47 @@
 PROJECT FEATURES IMPLEMENTED
 ----------------------------
-This project implements (or tries to implement) the following requirements of the project (more implementation details are below):
+This project implements (or tries to implement) the following requirements of the project:
 - Tree of losers/tournament tree Priority Queue
+	- See PriorityQueue class for implementation
 - Duplicate removal
+	- This is done during the final merge step - we compare the next Record to store with the previous one, and when there is a complete match, we do not store it and look for another record to store
+	- See PriorityQueue::storeNextAndSwap and SortIterator::next
 - Cache-sized mini runs 
 	- These should be <= 1 MB worth of records (including any new lines that would be stored)
 	- I hard coded it to use up to 95 runs at this level at any one time -- this is our memory size (100 MB) / max cache size (1 MB) times 95% (to account for any other code/storage needed)
+	- See SortIterator constructor and SortIterator::moveToNextCache for the code where I create the PQs for these arrays (_cacheRuns[_cacheIndex])
 - Device-optimized page sizes
 	- Reading and writing from "SSD" uses 20000 bytes* (which is 200 MB/s * (0.1 ms = 0.0001 s), i.e. the latency * bandwidth)
 	- Reading and writing from "HDD" uses 500000 bytes (which is 100 MB/s *  (5 ms = 0.005 s), i.e. the latency * bandwidth)
+	- See usages of the global variables SSD_PAGE_SIZE and HDD_PAGE_SIZE for this feature
+		- In particular, spillSsd/gracefulDegrade (in SortIterator) and the InputBuffer constructor open files and set the buffering to the corresponding page size
 - Spilling from cache-sized runs to "SSD"
+	- See SortIterator::gracefulDegrade() for the code that starts storing from the cache to the SSD
 - Spilling from "SSD" (+ cache-sized runs) to "HDD"
+	- See SortIterator::gracefulDegrade() for the code that starts storing from the cache or SSD to HDD
 - Some graceful degradation during both of the spill steps 
 	- Specifically, when we're on the last of the 95 cache-sized runs, we will continue to read new entries, while also spilling to SSD (if it's not full) or HDD (if SSD is full). 
 	- We will only save to the final cache if a new entry is less than the last spilled value (since we cannot safely replace it into the overarching priority queue structure in that case)
 	- Only if we fill the final cache in this process will we give up and spill the rest to SSD/HDD
+	- See SortIterator::gracefulDegrade() 
 - Verifying sort order
 	- I also check character-wise XOR parity, which gives a fairly reliable indication that the final merge has the same records as the input 
 	- When the input is sorted, I also check whether duplicates were removed (I just compare adjacent records, so if it is not sorted this cannot be determined)
+	- See FilterIterator.cpp (in particular updateIsSorted and updateParity)
 
  
 *Note that I consistently used decimal byte units rather than binary, e.g. I used 1000 (= 10^3) bytes for 1 KB, rather than 1024 (= 2^10)
 
+Other features I'm unsure of whether I implemented:
+- Minimum count of rows
+	- I'm not really sure what this is supposed to be -- the description I got was "the tricks that you have implemented to reduce unnecessary IOs between the devices"
+	- In that case, IOs are (should be) reduced by 
+		- Buffering reads/writes based on device-specific page size (as described above) -> doing this means a write should only occur when we're ready to write a reasonable (based on the device) amount of data (plus a smaller final write at the EOF), and reads will always gather a reasonable amount of data to use (plus a smaller final read at the EOF)
+		- Graceful degradation 
+			- This means we will generate larger runs and thus potentially avoid some IOs we would have incurred from spilling records 
+		- We also do not store the contents of memory to SSD or move the contents of SSD to HDD when we prepare for the final merge, which avoids 2 * 100 MB of IO to move them between levels (we just merge from whereever the records are to their final location)
+- Optimized merge patterns
+	- Also not really sure what this is supposed to be -- the description I got was "the constants you have defined in your code related to the data transfer between the device" - but I'm not really sure what about those is relevant for satisfying the requirement
 
 IMPLEMENTATION
 --------------
@@ -106,6 +126,3 @@ OTHER NOTES
 - For the SSD/HDD spilling files, I wasn't entirely sure how we were intended to emulate these -- I just did so logically, i.e. in the way I treated them, but both were ultimately just regular files on my machine.
 - Similarly, for the latency metrics, I wasn't actually handling these any differently, so the I/O latency is just an estimate based on how many pages I would have written to memory (and, as I buffered the files by passing a buffer array and page size to setvbuf, this estimate may not accurately reflect how the OS is buffering the writes behind the scenes)
 
-6) Portability
-- I developed this on Windows -- when I try running on Linux, it does not work as expected at all (it runs without crashing, but all the data in inputfile.txt/outputfile.txt seems to be gibberish
-- So in other words, I cannot verify that it will work outside of Windows

@@ -1,4 +1,4 @@
-#include <mmcobj.h>
+#include <string.h>
 #include "PriorityQueue.h"
 #include "InputBuffer.h"
 #include "InputStream.h"
