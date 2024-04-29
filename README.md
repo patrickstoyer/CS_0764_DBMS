@@ -53,6 +53,36 @@ Other features I'm unsure of whether I implemented:
 
 IMPLEMENTATION
 --------------
+Algorithms used:
+- 3-level External merge sort w/ graceful degradation (obviously)
+	- Level 0 - "Cache"-sized (1MB) runs are formed by adding new records to tree of losers priority queue
+	- Level 1 - If and when memory is almost filled (all but one cache-sized run filled, we start graceful degradation/spilling to SSD. 
+		- Winners of each "cache"-sized run added to another tree of losers priority queue, and we incrementally move the overall winner from the level 0 runs to the SSD. 
+		- If the record we stored is less than the next record, we replace the stored record with it throughout the priority queue structure; if it is not, then we add the next record to the final cache. 
+		- Only if we completely fill the last cache in this process do we spill all data in memory to SSD. 
+		- In my testing, this seems to have increased run size ~5-10%.
+	- Level 2 - If and when SSD is filled, we start graceful degradation/spilling to HDD.
+		- The winner of the priority queue in level 1 is added to another tree of losers priority queue, alongside the first (i.e. minimum) record from each SSD temporary file.
+		- The winner of that priority queue is spilled to HDD -- as in the level 1 merge step, we replace it throughout the priority queue structure with the next record passed if the latter is greater, otherwise we put the next record in our final cache. Again, only if we completely fill the last cache do we completely spill to HDD. 
+	- The final merge step depends on the state at the time we finishing reading inputs
+		- In essence, we create a tree of losers priority containing the winner from the cache-sized runs, and, if applicable the first (i.e. minimum) record from any SSD or HDD temporary files, and get each record in turn from it.
+    
+Structures used:
+- Tree of losers priority queue
+	- Essentially as described in papers
+	- Records are added from leaves, and we make a leaf->root pass, comparing with existing records in tree and swapping the loser of the comparison into the tree if necessary
+	- Prior to adding any records, the tree is initialized with early fences -- before we read from the PQ, we either add enough records to remove all those fences, or swap them with late fences, which will pull the data Records up to the correct position
+	- When removing the top record from the structure, we either replace with another key value, or with a late fence (which will pull any other records in the tree up to the correct position).
+
+General program flow:
+- Most actual work is done from each Iterator class 
+- Iterator constructor sets up any necessary data and does any work to prep for moving to subsequent record in next()
+- next() method moves to next record (assigning _currentRecord with its value), and in some cases does something with the record (e.g. SortIterator stores it, FilterIterator compares sort order/duplication and parity), or prints metrics/information
+- Iterator destructor does any necessary cleanup
+- Each iterator consumes inputs from another Iterator (except Scan, which generates the inputs) -- we either consume all records in the constructor (e.g. Sort, which must generate the final merge PQ from them, or kind of Scan which generates all data in the constructor) or we do it in turn as the previous Iterator gives it input (e.g. Filter)
+- The flow of Iterator/Plan types used in my final program is Filter -> Sort -> Filter -> Scan
+	- So we first generate input (Scan), then "filter" it (check sortedness/parity/duplication), then sort it, then "filter" it again
+   
 Overview of classes:
 - PriorityQueue.h/PriorityQueue.cpp - Implement most of the functionality related to the tree of losers/tournament trees
 	Key methods include:
