@@ -66,6 +66,8 @@ Algorithms used:
 		- The winner of that priority queue is spilled to HDD -- as in the level 1 merge step, we replace it throughout the priority queue structure with the next record passed if the latter is greater, otherwise we put the next record in our final cache. Again, only if we completely fill the last cache do we completely spill to HDD. 
 	- The final merge step depends on the state at the time we finishing reading inputs
 		- In essence, we create a tree of losers priority containing the winner from the cache-sized runs, and, if applicable the first (i.e. minimum) record from any SSD or HDD temporary files, and get each record in turn from it.
+	- In-stream duplicate removal
+		- Duplicates are removed during the final merge step -- the value we're about to store is compared to the previously stored one, and if it is a duplicate we do not save it (and continue polling the PQ until we find a non-duplicate/reach the end of the inputs)
     
 Structures used:
 - Tree of losers priority queue
