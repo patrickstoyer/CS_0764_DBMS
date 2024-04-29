@@ -67,7 +67,11 @@ Algorithms used:
 	- The final merge step depends on the state at the time we finishing reading inputs
 		- In essence, we create a tree of losers priority containing the winner from the cache-sized runs, and, if applicable the first (i.e. minimum) record from any SSD or HDD temporary files, and get each record in turn from it.
 	- In-stream duplicate removal
-		- Duplicates are removed during the final merge step -- the value we're about to store is compared to the previously stored one, and if it is a duplicate we do not save it (and continue polling the PQ until we find a non-duplicate/reach the end of the inputs)
+		- Duplicates are removed during the final merge step -- the value we're about to store is compared to the previously stored one, and if it is a duplicate we do not save it (and continue polling the PQ until we find a non-duplicate/reach the end of the inputs) (this is implemented in the storeNextAndSwap functions of PriorityQueue/InputBuffer).
+- Checking sortedness/duplicates/parity (Filter.cpp)
+  	- Sortedness is checked by comparison of each of the _currentRecords the SortIterator selects after each call to next() to the previously seen one
+  	- Duplicates are checked similarly - we only report this if the Records are sorted, but if they are then we report duplicates if subsequent records exactly match.
+  	- Parity is updated by taking XOR of previous parity with each character in each Record (i.e. parity = parity ^ nextChar) 
     
 Structures used:
 - Tree of losers priority queue
@@ -166,7 +170,7 @@ I also tested extensively with cache/RAM/SSD size constants that were lower than
 
 5) Duplicate Removal
 - Given the fact that data is randomly generated with each record of size N bytes containing N chars, each with 62 possible values ([A-Za-z0-9]), the number of possible records is very large (62 ^ N) and the probability of any duplicates, even with the 20 byte records and a large number of records is relatively low
-- As such, most of my testing was done with small records/keys of size 2-3 bytes, and I was unable to do much testing with larger records. The behavior with these very small records was somewhat variable - usually values were removed correctly, but sometimes they were not, and I was unable to reproduce issues consistently enough to resolve them.
+- As such, most of my testing was done with small records/keys of size 2-3 bytes, and I was unable to do much testing with larger records. The behavior with these very small records was somewhat variable - usually values were removed correctly, but sometimes they were not, and I was unable to reproduce issues consistently enough to resolve them. It's possible this was some kind of general issue from having such small keys since I couldn't determine any reason the logic I was using would be in correct. 
 
 6) "SSD" and "HDD" files
 - For the SSD/HDD spilling files, I wasn't entirely sure how we were intended to emulate these -- I just did so logically, i.e. in the way I treated them, but both were ultimately just regular files on my machine.
