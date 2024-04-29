@@ -1,0 +1,8 @@
+Scan.cpp:35:ScanIterator generating 62500 records of size 2000
+Filter.cpp:59:FilterIterator checking sortedness and parity
+Sort.cpp:25:SortIterator sorting records
+Sort.cpp:147:moveToNextCache starting graceful degradation
+Sort.cpp:216:gracefulDegrade spilling to SSD
+Sort.cpp:284:closeTmpBuffer SSD write of 9757 bytes with latency 0.1 ms (total I/O latency: 3038.0)
+Sort.cpp:86:SortIterator consumed 62500 rows. Beginning final merge step.
+Filter.cpp:59:FilterIterator checking sortedness and parity

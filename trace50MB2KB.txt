@@ -1,0 +1,22 @@
+Scan.cpp:35:ScanIterator generating 25000 records of size 2000
+Filter.cpp:59:FilterIterator checking sortedness and parity
+Sort.cpp:25:SortIterator sorting records
+Filter.cpp:72:printStuff 
+Input was not sorted, and parity was 45
+Does file have duplicates? Unknown
+Sort.cpp:86:SortIterator consumed 25000 rows. Beginning final merge step.
+Filter.cpp:59:FilterIterator checking sortedness and parity
+Filter.cpp:72:printStuff 
+Input was sorted, and parity was 45
+Does file have duplicates? No
+Iterator.cpp:22:run entire plan produced 25000 rows.
+Total bytes read:              50025000
+Total bytes written:           100050000
+Total estimated (I/O) latency: 1510.0 ms
+Total actual run time:         0.42 sec.
+
+
+Filter.cpp:64:~FilterIterator produced 25000 of 25000 rows.
+Filter.cpp:64:~FilterIterator produced 25000 of 25000 rows.
+Scan.cpp:49:~ScanIterator produced 25000 of 25000 rows
+Sort.cpp:97:~SortIterator produced 25000 of 25000 rows

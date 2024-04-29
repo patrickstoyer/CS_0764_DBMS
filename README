@@ -1,3 +1,7 @@
+Name: Patrick Stoyer
+github ID: patrickstoyer
+Repo: https://github.com/patrickstoyer/CS_0764_DBMS
+
 PROJECT FEATURES IMPLEMENTED
 ----------------------------
 This project implements (or tries to implement) the following requirements of the project:
@@ -117,12 +121,19 @@ OTHER NOTES
 - Filter.cpp also reports whether the input was sorted, if any duplicates were found (which is not known if the input wasn't sorted based on how I checked this), and the character-wise XOR parity. 
 	- This is shown twice, first for the input and then for the output
 	- A correct output should be sorted, have no duplicates, and parity should match (if duplicates are removed, we will track the parity of the removed duplicates and report the parity with and without them).
+- Examples of the trace files are given for several test cases -- the files are named to reflect the inputs -- traceXY.txt where X is the total size of the sort (e.g. 50MB) and Y is the record size (e.g. 2000KB).
 
-4) Duplicate Removal
+4) Testing
+I tested and had successful results with key sizes of 20B, 200B and 2000B/2KB, with total sizes of 50MB, 125MB, and 12GB. At 12GB, the runs took a substantial amount of time, so I did not test with total data greater than that. 
+
+I also tested extensively with cache/RAM/SSD size constants that were lower than the ones in the project requirements (e.g. 1/100th of the ones given us) in order to verify/debug the spilling and graceful degradation behavior.
+
+5) Duplicate Removal
 - Given the fact that data is randomly generated with each record of size N bytes containing N chars, each with 62 possible values ([A-Za-z0-9]), the number of possible records is very large (62 ^ N) and the probability of any duplicates, even with the 20 byte records and a large number of records is relatively low
 - As such, most of my testing was done with small records/keys of size 2-3 bytes, and I was unable to do much testing with larger records. The behavior with these very small records was somewhat variable - usually values were removed correctly, but sometimes they were not, and I was unable to reproduce issues consistently enough to resolve them.
 
-5) "SSD" and "HDD" files
+6) "SSD" and "HDD" files
 - For the SSD/HDD spilling files, I wasn't entirely sure how we were intended to emulate these -- I just did so logically, i.e. in the way I treated them, but both were ultimately just regular files on my machine.
 - Similarly, for the latency metrics, I wasn't actually handling these any differently, so the I/O latency is just an estimate based on how many pages I would have written to memory (and, as I buffered the files by passing a buffer array and page size to setvbuf, this estimate may not accurately reflect how the OS is buffering the writes behind the scenes)
+
 

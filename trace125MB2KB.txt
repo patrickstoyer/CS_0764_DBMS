@@ -1,0 +1,24 @@
+Scan.cpp:35:ScanIterator generating 62500 records of size 2000
+Filter.cpp:59:FilterIterator checking sortedness and parity
+Sort.cpp:25:SortIterator sorting records
+Sort.cpp:155:moveToNextCache starting graceful degradation
+Sort.cpp:224:gracefulDegrade spilling to SSD
+Filter.cpp:72:printStuff 
+Input was not sorted, and parity was 117
+Does file have duplicates? Unknown
+Sort.cpp:86:SortIterator consumed 62500 rows. Beginning final merge step.
+Filter.cpp:59:FilterIterator checking sortedness and parity
+Filter.cpp:72:printStuff 
+Input was sorted, and parity was 117
+Does file have duplicates? No
+Iterator.cpp:22:run entire plan produced 62500 rows.
+Total bytes read:              231973929
+Total bytes written:           357036429
+Total estimated (I/O) latency: 4829.3 ms
+Total actual run time:         6.15 sec.
+
+
+Filter.cpp:64:~FilterIterator produced 62500 of 62500 rows.
+Filter.cpp:64:~FilterIterator produced 62500 of 62500 rows.
+Scan.cpp:49:~ScanIterator produced 62500 of 62500 rows
+Sort.cpp:96:~SortIterator produced 62500 of 62500 rows
